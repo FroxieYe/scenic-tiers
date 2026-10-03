@@ -3,210 +3,347 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>景点分级 · 从夯到拉完了</title>
+<title>景点评级 — 从夯到拉完了</title>
+<meta name="description" content="我去过的景点，五档分级：夯、顶级、人上人、npc、拉完了。">
+<meta name="theme-color" content="#0A0A12">
 <style>
-  :root{
-    --paper:#F6F4F0;
-    --card:#FFFFFF;
-    --ink:#1A1816;
-    --muted:#6E675F;
-    --line:#E3DED6;
-    --line-strong:#CFC7BB;
-    --accent:#D7263D;
-
-    --t-hang:#D7263D;
-    --t-top:#E8762A;
-    --t-ren:#C9A227;
-    --t-npc:#7C8795;
-    --t-la:#4F5C77;
-
-    --gap:clamp(14px,2vw,22px);
-    --radius:12px;
-    --shadow:0 1px 2px rgba(26,24,22,.05), 0 6px 18px -12px rgba(26,24,22,.22);
+  /* Zpix（最像素）· 个人项目免费授权 · github.com/SolidZORO/zpix-pixel-font */
+  @font-face{
+    font-family:"Zpix";
+    src:url("zpix.woff2") format("woff2");
+    font-weight:normal;
+    font-style:normal;
+    font-display:swap;
   }
-  @media (prefers-color-scheme: dark){
-    :root{
-      --paper:#131211;
-      --card:#1C1B19;
-      --ink:#F1EDE7;
-      --muted:#9A938A;
-      --line:#2B2927;
-      --line-strong:#3A3734;
-      --shadow:0 1px 2px rgba(0,0,0,.4), 0 8px 20px -14px rgba(0,0,0,.8);
-    }
+
+  :root{
+    color-scheme:dark;
+
+    /* 井 */
+    --void:#0A0A12;
+    --well:#12121C;
+    --grid:#232336;
+    --edge:#3A3A52;
+    --panel:#1A1A28;
+
+    --ink:#EDEDF5;
+    --ink-dim:#8A8AA8;
+
+    /* 七种骨牌色里取五种，热→冷正好是档位梯度 */
+    --z:#EF3B33;  --z-on:#FFFFFF;
+    --l:#F58A24;  --l-on:#12121C;
+    --o:#F2D024;  --o-on:#12121C;
+    --s:#3BC94B;  --s-on:#12121C;
+    --j:#3B5BE0;  --j-on:#FFFFFF;
+
+    /* 一切都踩 4px 模数 */
+    --u:4px;
+    --cell:20px;
   }
 
   *{box-sizing:border-box}
-  html{-webkit-text-size-adjust:100%}
+  input,button,textarea,select{font:inherit}
+
+  html{background:var(--void)}
   body{
     margin:0;
-    background:var(--paper);
+    background:var(--void);
     color:var(--ink);
-    font-family:"PingFang SC","Hiragino Sans GB","Microsoft YaHei",system-ui,-apple-system,"Segoe UI",sans-serif;
-    font-size:16px;
-    line-height:1.6;
-    -webkit-font-smoothing:antialiased;
+    font-family:"Zpix","Courier New",monospace;
+    font-size:12px;
+    line-height:1.75;
+    font-weight:normal;
+    font-synthesis:none;              /* 像素字不能合成粗体，会糊 */
+    -webkit-font-smoothing:none;
+    -moz-osx-font-smoothing:grayscale;
   }
-  .wrap{max-width:1040px;margin:0 auto;padding:clamp(28px,5vw,64px) clamp(16px,4vw,32px) 80px}
+  /* 字号只取 12 的整数倍，否则点阵会插值模糊 */
+  .t12{font-size:12px}
+  .t24{font-size:24px}
 
-  /* ---------- header ---------- */
-  header{border-bottom:1px solid var(--line);padding-bottom:22px;margin-bottom:28px}
-  .eyebrow{
-    font-size:12px;letter-spacing:.22em;text-transform:uppercase;
-    color:var(--muted);margin:0 0 10px;font-weight:600;
+  img{image-rendering:pixelated}
+
+  .cabinet{max-width:960px;margin:0 auto;padding:32px 16px 64px}
+
+  /* ---------- 顶部招牌 ---------- */
+  .marquee{
+    border:var(--u) solid var(--edge);
+    background:var(--panel);
+    padding:24px;
+    margin-bottom:24px;
+    display:flex;flex-wrap:wrap;gap:24px;align-items:flex-end;
+    box-shadow:8px 8px 0 #000;
   }
-  h1{
-    margin:0;font-size:clamp(28px,5.2vw,44px);line-height:1.15;
-    font-weight:800;letter-spacing:-.01em;
+  .marquee h1{
+    margin:0;
+    font-size:48px;
+    line-height:1.1;
+    letter-spacing:2px;
+    color:var(--ink);
+    text-shadow:4px 4px 0 var(--z);   /* 硬偏移，街机 logo 的做法 */
   }
-  h1 .sep{color:var(--line-strong);font-weight:400;margin:0 .18em}
-  .lede{margin:12px 0 0;color:var(--muted);font-size:15px;max-width:52ch}
+  .tagline{margin:12px 0 0;color:var(--ink-dim);font-size:12px;line-height:1.6}
 
-  .bar{display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin-top:22px}
-  .count{font-size:14px;color:var(--muted);margin-right:auto}
-  .count b{color:var(--ink);font-size:20px;font-weight:700;font-variant-numeric:tabular-nums}
-
-  input[type=search],input[type=text],select,textarea{
-    font:inherit;color:inherit;background:var(--card);
-    border:1px solid var(--line-strong);border-radius:8px;padding:8px 11px;
+  .score{display:flex;gap:12px;margin-left:auto}
+  .stat{
+    border:var(--u) solid var(--edge);
+    background:var(--well);
+    padding:8px 12px;
+    min-width:92px;
+    text-align:center;
   }
-  input[type=search]{width:min(220px,46vw)}
-  textarea{resize:vertical;min-height:64px;line-height:1.5}
-  ::placeholder{color:var(--muted);opacity:.8}
+  .stat .k{display:block;color:var(--ink-dim);font-size:12px}
+  .stat .v{display:block;font-size:36px;line-height:1.2;font-variant-numeric:tabular-nums}
+  .stat.hi .v{color:var(--z)}
 
-  button{font:inherit;cursor:pointer;border-radius:8px;border:1px solid var(--line-strong);
-    background:var(--card);color:var(--ink);padding:8px 14px;transition:background .12s,border-color .12s}
-  button:hover{border-color:var(--ink)}
-  .btn-primary{background:var(--ink);color:var(--paper);border-color:var(--ink);font-weight:600}
-  .btn-primary:hover{opacity:.88}
-  .btn-ghost{background:transparent;border-style:dashed;color:var(--muted)}
-  .btn-danger{color:var(--accent);border-color:transparent;background:transparent;padding:6px 8px}
-  .btn-danger:hover{border-color:var(--accent)}
-  :focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+  /* ---------- 机台主体：井 + 侧栏 ---------- */
+  .deck{display:grid;grid-template-columns:1fr 232px;gap:24px;align-items:start}
 
-  /* ---------- tiers ---------- */
-  .tier{
-    display:grid;grid-template-columns:132px 1fr;gap:var(--gap);
-    align-items:stretch;padding:var(--gap) 0;border-bottom:1px solid var(--line);
+  .well{
+    border:var(--u) solid var(--edge);
+    background-color:var(--well);
+    background-image:
+      linear-gradient(to right,var(--grid) 1px,transparent 1px),
+      linear-gradient(to bottom,var(--grid) 1px,transparent 1px);
+    background-size:var(--cell) var(--cell);
+    box-shadow:8px 8px 0 #000;
   }
-  .tier:last-of-type{border-bottom:0}
-  .tier-label{
-    border-radius:var(--radius);color:#fff;padding:16px 14px;
-    display:flex;flex-direction:column;justify-content:space-between;min-height:104px;
+
+  .row{
+    display:grid;
+    grid-template-columns:160px 1fr;
+    gap:16px;
+    padding:12px 16px;
+    border-bottom:1px solid var(--grid);
+    position:relative;
   }
-  .tier-name{font-size:clamp(22px,2.6vw,30px);font-weight:800;line-height:1.1;letter-spacing:.02em}
-  .tier-note{font-size:12px;opacity:.82;margin-top:6px;line-height:1.45}
-  .tier-n{font-size:12px;opacity:.75;font-variant-numeric:tabular-nums;align-self:flex-end}
+  .row:last-child{border-bottom:0}
 
-  .cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(224px,1fr));gap:12px;align-content:start}
-
-  .card{
-    background:var(--card);border:1px solid var(--line);border-left:3px solid var(--tc,var(--line-strong));
-    border-radius:var(--radius);padding:13px 14px;box-shadow:var(--shadow);
-    display:flex;flex-direction:column;gap:3px;position:relative;
+  /* 行闪一下白：消行的那一下 */
+  .row.cleared::after{
+    content:"";position:absolute;inset:0;background:#fff;pointer-events:none;
+    opacity:0;                       /* 静止态，动画播完回到这里 */
+    animation:flash .26s steps(2) 2;
   }
-  .card h3{margin:0;font-size:17px;font-weight:700;letter-spacing:-.005em;padding-right:22px}
-  .meta{font-size:12.5px;color:var(--muted);display:flex;gap:8px;flex-wrap:wrap}
-  .meta span{display:inline-flex;align-items:center;gap:4px}
-  .note{font-size:13.5px;color:var(--ink);opacity:.86;margin-top:5px}
-  .card-actions{position:absolute;top:8px;right:8px;display:flex;gap:2px;opacity:0;transition:opacity .12s}
-  .card:hover .card-actions,.card:focus-within .card-actions{opacity:1}
-  .icon-btn{border:0;background:transparent;padding:3px 5px;line-height:1;color:var(--muted);font-size:13px;border-radius:6px}
-  .icon-btn:hover{background:var(--paper);color:var(--ink)}
+  @keyframes flash{0%,100%{opacity:0}50%{opacity:.22}}
 
-  .empty{
+  /* ---------- 档位标牌 ---------- */
+  .tag{display:flex;flex-direction:column;gap:4px}
+  .tag .head{display:flex;align-items:center;gap:8px}
+  .piece{display:grid;grid-template-columns:repeat(4,12px);grid-auto-rows:12px;gap:2px}
+  .piece i{display:block}
+  .piece i.on{
+    background:var(--c);
+    box-shadow:inset 2px 2px 0 rgba(255,255,255,.4), inset -2px -2px 0 rgba(0,0,0,.4);
+  }
+  .tag .name{font-size:24px;line-height:1;color:var(--c)}
+  .tag .blurb{font-size:12px;color:var(--ink-dim);line-height:1.4}
+  .tag .n{font-size:12px;color:#5C5C78;font-variant-numeric:tabular-nums;line-height:1.4}
+
+  /* ---------- 方块（景点） ---------- */
+  .blocks{display:grid;grid-template-columns:repeat(auto-fill,208px);gap:12px;
+    align-content:start;justify-content:start}
+
+  .block{
+    background:var(--c);
+    color:var(--on);
+    padding:12px;
+    border:0;
+    box-shadow:
+      inset 4px 4px 0 rgba(255,255,255,.34),
+      inset -4px -4px 0 rgba(0,0,0,.38),
+      4px 4px 0 #000;
+    position:relative;
+    min-height:76px;
+  }
+  .block h3{margin:0;font-size:24px;line-height:1.25;word-break:break-word;padding-right:56px}
+  .block .where{font-size:12px;opacity:.8;margin-top:4px}
+  .block .said{font-size:12px;opacity:.92;margin-top:8px;line-height:1.6}
+
+  .block.drop{animation:drop .4s steps(8)}   /* 分步下落，不是平滑缓动 */
+  @keyframes drop{from{transform:translateY(-200px)}to{transform:translateY(0)}}
+
+  .tools{position:absolute;top:8px;right:8px;display:flex;gap:4px}
+  .tools button{
+    font:inherit;font-size:12px;line-height:1;cursor:pointer;
+    background:rgba(0,0,0,.26);color:inherit;border:0;padding:5px 6px;
+  }
+  .tools button:hover{background:rgba(0,0,0,.52)}
+
+  .gap{
     grid-column:1/-1;
-    border:1px dashed var(--line-strong);border-radius:var(--radius);
-    color:var(--muted);font-size:13.5px;padding:16px;display:flex;align-items:center;
-    justify-content:center;min-height:72px;
+    color:#3E3E58;
+    font-size:12px;
+    margin:0;
+    align-self:center;
   }
 
-  /* ---------- dialog ---------- */
+  /* ---------- 侧栏 HUD ---------- */
+  .hud{display:flex;flex-direction:column;gap:16px}
+  .box{
+    border:var(--u) solid var(--edge);
+    background:var(--panel);
+    padding:16px;
+    box-shadow:8px 8px 0 #000;
+  }
+  .box h2{margin:0 0 12px;font-size:12px;color:var(--ink-dim);line-height:1}
+
+  /* 凸起的按钮 / 凹陷的输入框 —— 街机机箱的做法 */
+  button.key{
+    font:inherit;font-size:12px;cursor:pointer;width:100%;
+    background:var(--edge);color:var(--ink);border:0;padding:12px;
+    box-shadow:inset 4px 4px 0 rgba(255,255,255,.22), inset -4px -4px 0 rgba(0,0,0,.45);
+  }
+  button.key:hover{background:#4A4A68}
+  button.key:active{
+    transform:translate(2px,2px);
+    box-shadow:inset -4px -4px 0 rgba(255,255,255,.14), inset 4px 4px 0 rgba(0,0,0,.45);
+  }
+  button.key.go{background:var(--z);color:#fff;font-size:24px;padding:16px 12px}
+  button.key.go:hover{background:#FF5248}
+  .pair{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+
+  input[type=search],input[type=text],textarea{
+    font:inherit;font-size:12px;width:100%;
+    background:var(--void);color:var(--ink);border:0;padding:10px;
+    box-shadow:inset 4px 4px 0 rgba(0,0,0,.6), inset -2px -2px 0 rgba(255,255,255,.1);
+  }
+  textarea{resize:vertical;min-height:72px;line-height:1.7}
+  ::placeholder{color:#55556E}
+
+  :focus-visible{outline:var(--u) solid var(--o);outline-offset:2px}
+
+  .note{color:var(--ink-dim);font-size:12px;line-height:1.7}
+  .alert{color:var(--o);font-size:12px;line-height:1.7;margin:12px 0 0}
+
+  /* ---------- 弹窗 ---------- */
   dialog{
-    border:1px solid var(--line-strong);border-radius:14px;background:var(--card);color:var(--ink);
-    padding:0;width:min(440px,92vw);box-shadow:0 24px 60px -20px rgba(0,0,0,.4);
+    border:var(--u) solid var(--edge);background:var(--panel);color:var(--ink);
+    padding:0;width:min(420px,92vw);box-shadow:12px 12px 0 #000;
   }
-  dialog::backdrop{background:rgba(26,24,22,.45);backdrop-filter:blur(2px)}
-  .dlg-head{padding:18px 20px 0}
-  .dlg-head h2{margin:0;font-size:19px;font-weight:700}
-  form.dlg{padding:14px 20px 18px;display:grid;gap:12px}
-  .field{display:grid;gap:5px}
-  .field label{font-size:12.5px;color:var(--muted);font-weight:600;letter-spacing:.02em}
-  .tier-pick{display:flex;flex-wrap:wrap;gap:6px}
-  .tier-pick input{position:absolute;opacity:0;width:0;height:0}
-  .tier-pick label{
-    font-size:13px;font-weight:600;padding:6px 11px;border-radius:999px;cursor:pointer;
-    border:1px solid var(--line-strong);color:var(--muted);user-select:none;
+  dialog::backdrop{background:rgba(10,10,18,.84)}
+  .bar{background:var(--edge);padding:10px 16px;font-size:12px}
+  form{padding:16px;display:grid;gap:12px}
+  .field{display:grid;gap:6px}
+  .field label{font-size:12px;color:var(--ink-dim)}
+
+  .picker{display:grid;grid-template-columns:repeat(5,1fr);gap:4px}
+  .picker span{position:relative;display:block}
+  .picker input{position:absolute;opacity:0;width:0;height:0}
+  .picker label{
+    display:block;text-align:center;font-size:12px;cursor:pointer;padding:10px 2px;
+    background:var(--void);color:var(--c);opacity:.5;user-select:none;line-height:1.3;
   }
-  .tier-pick input:checked + label{background:var(--tc);border-color:var(--tc);color:#fff}
-  .tier-pick input:focus-visible + label{outline:2px solid var(--accent);outline-offset:2px}
-  .dlg-foot{display:flex;gap:8px;justify-content:flex-end;margin-top:4px}
+  .picker label:hover{opacity:.8}
+  .picker input:checked + label{
+    background:var(--c);color:var(--on);opacity:1;
+    box-shadow:inset 3px 3px 0 rgba(255,255,255,.34), inset -3px -3px 0 rgba(0,0,0,.38);
+  }
+  .picker input:focus-visible + label{outline:var(--u) solid var(--o);outline-offset:2px}
+  .acts{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:4px}
 
-  footer{margin-top:40px;padding-top:20px;border-top:1px solid var(--line);
-    display:flex;flex-wrap:wrap;gap:10px;align-items:center}
-  footer .hint{font-size:12.5px;color:var(--muted);margin-right:auto;max-width:46ch}
-  .warn{font-size:12.5px;color:var(--accent);margin:10px 0 0}
+  footer{margin-top:32px;color:#4A4A66;font-size:12px;line-height:1.8}
+  footer a{color:var(--ink-dim)}
 
-  @media (max-width:640px){
-    .tier{grid-template-columns:1fr;gap:10px}
-    .tier-label{flex-direction:row;align-items:center;min-height:0;padding:11px 14px}
-    .tier-note{display:none}
-    .tier-n{margin-left:auto;align-self:center}
-    .cards{grid-template-columns:1fr}
+  @media (prefers-reduced-motion:reduce){
+    .block.drop{animation:none}
+    .row.cleared::after{animation:none}
+  }
+
+  @media (max-width:860px){
+    .deck{grid-template-columns:1fr}
+    .cabinet{padding:16px 12px 104px}     /* 给底部投放键让位 */
+    .marquee{padding:16px}
+    .stat .v{font-size:24px}
+    .box.next{
+      position:fixed;left:0;right:0;bottom:0;z-index:5;
+      border-left:0;border-right:0;border-bottom:0;box-shadow:0 -4px 0 #000;
+    }
+    .box.next h2{display:none}
+    .marquee h1{font-size:36px;text-shadow:3px 3px 0 var(--z)}
+    .score{margin-left:0;width:100%}
+    .stat{flex:1;min-width:0}
+    .row{grid-template-columns:1fr;gap:12px}
+    .tag{flex-direction:row;align-items:center;gap:12px;flex-wrap:wrap}
+    .tag .blurb{display:none}
+    .tag .n{margin-left:auto}
+    .blocks{grid-template-columns:1fr}
+    .picker{grid-template-columns:repeat(3,1fr)}
   }
 </style>
 </head>
 <body>
-<div class="wrap">
+<div class="cabinet">
 
-  <header>
-    <p class="eyebrow">Scenic Spot Tier List</p>
-    <h1>夯<span class="sep">→</span>拉完了</h1>
-    <p class="lede">我去过的所有景点，五档分级。好的进夯，烂的进拉完了，中间的自己掂量。</p>
-    <div class="bar">
-      <p class="count">已收录 <b id="total">0</b> 个景点</p>
-      <input type="search" id="filter" placeholder="搜景点 / 地点" aria-label="搜索景点">
-      <button class="btn-primary" id="add-btn">+ 添加景点</button>
+  <header class="marquee">
+    <div>
+      <h1>景点评级</h1>
+      <p class="tagline">我去过的地方，五档，从夯到拉完了。</p>
     </div>
-    <p class="warn" id="storage-warn" hidden>浏览器本地存储不可用（常见于直接打开本地文件），本次改动不会被保存——用下方「导出 JSON」留存数据。</p>
+    <div class="score">
+      <div class="stat"><span class="k">去过</span><span class="v" id="stat-total">000</span></div>
+      <div class="stat hi"><span class="k">夯</span><span class="v" id="stat-top">000</span></div>
+    </div>
   </header>
 
-  <main id="tiers"></main>
+  <div class="deck">
+    <main class="well" id="well"></main>
+
+    <aside class="hud">
+      <section class="box next">
+        <h2>NEXT</h2>
+        <button class="key go" id="add">＋ 投一个</button>
+      </section>
+
+      <section class="box">
+        <h2>找景点</h2>
+        <input type="search" id="find" placeholder="名字或地方" aria-label="搜索景点">
+      </section>
+
+      <section class="box">
+        <h2>存档</h2>
+        <div class="pair">
+          <button class="key" id="save-out">导出</button>
+          <button class="key" id="save-in">导入</button>
+        </div>
+        <input type="file" id="file" accept="application/json,.json" hidden>
+        <p class="note" style="margin:12px 0 0">记录只存在这台设备的浏览器里。</p>
+        <p class="alert" id="warn" hidden>这个浏览器不让本地文件存数据，改动不会留下。用本地服务打开，或先导出。</p>
+      </section>
+    </aside>
+  </div>
 
   <footer>
-    <p class="hint">数据存在你这台设备的浏览器里，不上传。换设备或清缓存前记得导出。</p>
-    <button id="export-btn">导出 JSON</button>
-    <button id="import-btn">导入 JSON</button>
-    <input type="file" id="import-file" accept="application/json,.json" hidden>
+    <p>字体 <a href="https://github.com/SolidZORO/zpix-pixel-font" target="_blank" rel="noopener">Zpix 最像素</a>，个人项目免费授权。</p>
   </footer>
 </div>
 
 <dialog id="dlg">
-  <div class="dlg-head"><h2 id="dlg-title">添加景点</h2></div>
-  <form method="dialog" class="dlg" id="form">
+  <div class="bar" id="dlg-bar">新方块</div>
+  <form method="dialog" id="form">
     <div class="field">
-      <label for="f-name">景点名称</label>
-      <input type="text" id="f-name" name="name" required maxlength="40" placeholder="黄岩石窟">
+      <label for="f-name">叫什么</label>
+      <input type="text" id="f-name" required maxlength="40" placeholder="黄岩石窟">
     </div>
     <div class="field">
-      <label for="f-place">所在地</label>
-      <input type="text" id="f-place" name="place" maxlength="40" placeholder="浙江 台州">
+      <label for="f-where">在哪</label>
+      <input type="text" id="f-where" maxlength="40" placeholder="浙江 台州">
     </div>
     <div class="field">
-      <label for="f-date">去的时间</label>
-      <input type="text" id="f-date" name="date" maxlength="20" placeholder="2025-09 或留空">
+      <label for="f-when">什么时候去的</label>
+      <input type="text" id="f-when" maxlength="20" placeholder="2025-09，不填也行">
     </div>
     <div class="field">
-      <label id="tier-legend">评级</label>
-      <div class="tier-pick" role="radiogroup" aria-labelledby="tier-legend" id="tier-pick"></div>
+      <label id="pick-label">几档</label>
+      <div class="picker" role="radiogroup" aria-labelledby="pick-label" id="picker"></div>
     </div>
     <div class="field">
-      <label for="f-note">一句话评价</label>
-      <textarea id="f-note" name="note" maxlength="140" placeholder="选填"></textarea>
+      <label for="f-said">一句话</label>
+      <textarea id="f-said" maxlength="140" placeholder="不填也行"></textarea>
     </div>
-    <div class="dlg-foot">
-      <button type="button" id="cancel-btn">取消</button>
-      <button type="submit" class="btn-primary" id="save-btn">保存</button>
+    <div class="acts">
+      <button type="button" class="key" id="drop-it">取消</button>
+      <button type="submit" class="key go" style="font-size:12px;padding:12px">放进去</button>
     </div>
   </form>
 </dialog>
@@ -215,37 +352,54 @@
 (function(){
   "use strict";
 
-  /* ---- 五档，从高到低。改这里就能改档位文案 ---- */
+  /* 五档，从高到低。每档配一个真实的四格骨牌：形状和颜色双重编码档位。 */
   var TIERS = [
-    { key:"hang",  name:"夯",     note:"值得专程飞一趟", color:"var(--t-hang)" },
-    { key:"top",   name:"顶级",   note:"路过必须进去",   color:"var(--t-top)"  },
-    { key:"ren",   name:"人上人", note:"去了不亏",       color:"var(--t-ren)"  },
-    { key:"npc",   name:"npc",    note:"有它没它一样",   color:"var(--t-npc)"  },
-    { key:"la",    name:"拉完了", note:"劝退",           color:"var(--t-la)"   }
+    { key:"hang", name:"夯",     blurb:"值得专程飞一趟", c:"var(--z)", on:"var(--z-on)",
+      shape:[1,1,1,1, 0,0,0,0] },                                   /* I */
+    { key:"top",  name:"顶级",   blurb:"路过必须进去",   c:"var(--l)", on:"var(--l-on)",
+      shape:[0,1,0,0, 1,1,1,0] },                                   /* T */
+    { key:"ren",  name:"人上人", blurb:"去了不亏",       c:"var(--o)", on:"var(--o-on)",
+      shape:[0,0,1,0, 1,1,1,0] },                                   /* L */
+    { key:"npc",  name:"npc",    blurb:"有它没它一样",   c:"var(--s)", on:"var(--s-on)",
+      shape:[0,1,1,0, 1,1,0,0] },                                   /* S */
+    { key:"la",   name:"拉完了", blurb:"劝退",           c:"var(--j)", on:"var(--j-on)",
+      shape:[1,1,0,0, 0,1,1,0] }                                    /* Z */
   ];
 
-  /* ---- 初始数据 ---- */
   var SEED = [
-    { id:"seed-huangyan", name:"黄岩石窟", place:"浙江 台州", date:"", tier:"top", note:"" }
+    { id:"seed-huangyan", name:"黄岩石窟", where:"浙江 台州", when:"", tier:"top", said:"" }
   ];
 
   var KEY = "scenic-tiers-v1";
   var store = { ok:true };
   var spots = load();
   var editingId = null;
+  var landedId = null;          /* 刚落下的方块，用来放一次动画 */
 
   function load(){
     try{
       var raw = localStorage.getItem(KEY);
       if(raw){
         var parsed = JSON.parse(raw);
-        if(Array.isArray(parsed)) return parsed;
+        if(Array.isArray(parsed)) return parsed.map(migrate);
       }
     }catch(e){
       store.ok = false;
-      document.getElementById("storage-warn").hidden = false;
+      document.getElementById("warn").hidden = false;
     }
     return SEED.slice();
+  }
+
+  /* v1 用的是 place/date/note，这里统一成 where/when/said */
+  function migrate(s){
+    return {
+      id: s.id || uid(),
+      name: String(s.name || "没名字"),
+      where: String(s.where || s.place || ""),
+      when: String(s.when || s.date || ""),
+      said: String(s.said || s.note || ""),
+      tier: isTier(s.tier) ? s.tier : "npc"
+    };
   }
 
   function save(){
@@ -254,7 +408,7 @@
       localStorage.setItem(KEY, JSON.stringify(spots));
     }catch(e){
       store.ok = false;
-      document.getElementById("storage-warn").hidden = false;
+      document.getElementById("warn").hidden = false;
     }
   }
 
@@ -273,100 +427,118 @@
     });
   }
 
-  /* ---- 渲染 ---- */
-  var tiersEl = document.getElementById("tiers");
-  var filterEl = document.getElementById("filter");
+  function pad3(n){ return ("00" + n).slice(-3); }
+
+  function pieceHtml(t){
+    return '<div class="piece" aria-hidden="true">' +
+      t.shape.map(function(on){ return '<i class="' + (on ? "on" : "") + '"></i>'; }).join("") +
+    '</div>';
+  }
+
+  /* ---------- 画井 ---------- */
+  var well = document.getElementById("well");
+  var find = document.getElementById("find");
 
   function render(){
-    var q = filterEl.value.trim().toLowerCase();
-    var visible = spots.filter(function(s){
+    var q = find.value.trim().toLowerCase();
+    var shown = spots.filter(function(s){
       if(!q) return true;
-      return (s.name + " " + (s.place||"") + " " + (s.note||"")).toLowerCase().indexOf(q) > -1;
+      return (s.name + " " + s.where + " " + s.said).toLowerCase().indexOf(q) > -1;
     });
 
-    tiersEl.innerHTML = TIERS.map(function(t){
-      var items = visible.filter(function(s){ return s.tier === t.key; });
-      var all = spots.filter(function(s){ return s.tier === t.key; }).length;
+    well.innerHTML = TIERS.map(function(t){
+      var mine = shown.filter(function(s){ return s.tier === t.key; });
+      var all  = spots.filter(function(s){ return s.tier === t.key; }).length;
 
-      var cards = items.length
-        ? items.map(function(s){
-            var meta = [];
-            if(s.place) meta.push("<span>" + esc(s.place) + "</span>");
-            if(s.date)  meta.push("<span>" + esc(s.date) + "</span>");
-            return '<article class="card" style="--tc:' + t.color + '">' +
-              '<div class="card-actions">' +
-                '<button class="icon-btn" data-edit="' + s.id + '" aria-label="编辑 ' + esc(s.name) + '">改</button>' +
-                '<button class="icon-btn" data-del="' + s.id + '" aria-label="删除 ' + esc(s.name) + '">删</button>' +
+      var blocks = mine.length
+        ? mine.map(function(s){
+            return '<article class="block' + (s.id === landedId ? " drop" : "") + '">' +
+              '<div class="tools">' +
+                '<button data-edit="' + s.id + '" aria-label="改 ' + esc(s.name) + '">改</button>' +
+                '<button data-kill="' + s.id + '" aria-label="删掉 ' + esc(s.name) + '">×</button>' +
               '</div>' +
               '<h3>' + esc(s.name) + '</h3>' +
-              (meta.length ? '<p class="meta">' + meta.join("") + '</p>' : '') +
-              (s.note ? '<p class="note">' + esc(s.note) + '</p>' : '') +
+              (s.where || s.when
+                ? '<p class="where">' + esc([s.where, s.when].filter(Boolean).join("　")) + '</p>'
+                : '') +
+              (s.said ? '<p class="said">' + esc(s.said) + '</p>' : '') +
             '</article>';
           }).join("")
-        : '<div class="empty">' + (q ? "没有匹配的景点" : "这一档还空着") + '</div>';
+        : '<p class="gap">' + (q ? "这行没有匹配的" : "空行") + '</p>';
 
-      return '<section class="tier" aria-labelledby="t-' + t.key + '">' +
-        '<div class="tier-label" style="background:' + t.color + '">' +
-          '<div>' +
-            '<div class="tier-name" id="t-' + t.key + '">' + esc(t.name) + '</div>' +
-            '<div class="tier-note">' + esc(t.note) + '</div>' +
+      return '<section class="row' + (t.key === landedTier() ? " cleared" : "") + '"' +
+             ' style="--c:' + t.c + ';--on:' + t.on + '" aria-labelledby="h-' + t.key + '">' +
+        '<div class="tag">' +
+          '<div class="head">' + pieceHtml(t) +
+            '<div class="name" id="h-' + t.key + '">' + esc(t.name) + '</div>' +
           '</div>' +
-          '<div class="tier-n">' + all + '</div>' +
+          '<div class="blurb">' + esc(t.blurb) + '</div>' +
+          '<div class="n">' + all + ' 个</div>' +
         '</div>' +
-        '<div class="cards">' + cards + '</div>' +
+        '<div class="blocks">' + blocks + '</div>' +
       '</section>';
     }).join("");
 
-    document.getElementById("total").textContent = spots.length;
+    document.getElementById("stat-total").textContent = pad3(spots.length);
+    document.getElementById("stat-top").textContent =
+      pad3(spots.filter(function(s){ return s.tier === "hang"; }).length);
+
+    landedId = null;
   }
 
-  /* ---- 弹窗 ---- */
+  function landedTier(){
+    if(!landedId) return null;
+    var s = spots.filter(function(x){ return x.id === landedId; })[0];
+    return s ? s.tier : null;
+  }
+
+  /* ---------- 弹窗 ---------- */
   var dlg = document.getElementById("dlg");
   var form = document.getElementById("form");
-  var pick = document.getElementById("tier-pick");
-  // 注意：form.name 会被 HTMLFormElement 自身的 name 属性遮蔽，这里按 id 直接取
+  // form.name 会被 HTMLFormElement 自身的 name 属性遮蔽，一律按 id 取
   var fName  = document.getElementById("f-name");
-  var fPlace = document.getElementById("f-place");
-  var fDate  = document.getElementById("f-date");
-  var fNote  = document.getElementById("f-note");
+  var fWhere = document.getElementById("f-where");
+  var fWhen  = document.getElementById("f-when");
+  var fSaid  = document.getElementById("f-said");
 
-  pick.innerHTML = TIERS.map(function(t,i){
-    return '<span style="--tc:' + t.color + ';position:relative">' +
-      '<input type="radio" name="tier" id="tier-' + t.key + '" value="' + t.key + '"' + (i===1?" checked":"") + '>' +
-      '<label for="tier-' + t.key + '">' + esc(t.name) + '</label>' +
+  document.getElementById("picker").innerHTML = TIERS.map(function(t,i){
+    return '<span style="--c:' + t.c + ';--on:' + t.on + '">' +
+      '<input type="radio" name="tier" id="p-' + t.key + '" value="' + t.key + '"' + (i===1?" checked":"") + '>' +
+      '<label for="p-' + t.key + '">' + esc(t.name) + '</label>' +
     '</span>';
   }).join("");
 
-  function openDialog(spot){
+  function open(spot){
     editingId = spot ? spot.id : null;
-    document.getElementById("dlg-title").textContent = spot ? "编辑景点" : "添加景点";
-    fName.value  = spot ? spot.name : "";
-    fPlace.value = spot ? (spot.place||"") : "";
-    fDate.value  = spot ? (spot.date||"")  : "";
-    fNote.value  = spot ? (spot.note||"")  : "";
-    var key = spot ? spot.tier : "top";
-    var radio = form.querySelector('input[name=tier][value="' + key + '"]');
-    if(radio) radio.checked = true;
+    document.getElementById("dlg-bar").textContent = spot ? "改一下" : "新方块";
+    fName.value  = spot ? spot.name  : "";
+    fWhere.value = spot ? spot.where : "";
+    fWhen.value  = spot ? spot.when  : "";
+    fSaid.value  = spot ? spot.said  : "";
+    var r = form.querySelector('input[name=tier][value="' + (spot ? spot.tier : "top") + '"]');
+    if(r) r.checked = true;
     dlg.showModal();
     fName.focus();
   }
 
   form.addEventListener("submit", function(){
     var data = {
-      name: fName.value.trim(),
-      place: fPlace.value.trim(),
-      date: fDate.value.trim(),
-      note: fNote.value.trim(),
-      tier: (form.querySelector("input[name=tier]:checked")||{}).value || "npc"
+      name:  fName.value.trim(),
+      where: fWhere.value.trim(),
+      when:  fWhen.value.trim(),
+      said:  fSaid.value.trim(),
+      tier:  (form.querySelector("input[name=tier]:checked")||{}).value || "npc"
     };
     if(!data.name) return;
 
     if(editingId){
+      landedId = editingId;
       spots = spots.map(function(s){
         return s.id === editingId ? Object.assign({}, s, data) : s;
       });
     }else{
       data.id = uid();
+      landedId = data.id;
       spots.push(data);
     }
     editingId = null;
@@ -374,25 +546,25 @@
     render();
   });
 
-  document.getElementById("cancel-btn").addEventListener("click", function(){
+  document.getElementById("drop-it").addEventListener("click", function(){
     editingId = null;
     dlg.close();
   });
 
-  document.getElementById("add-btn").addEventListener("click", function(){ openDialog(null); });
+  document.getElementById("add").addEventListener("click", function(){ open(null); });
 
-  tiersEl.addEventListener("click", function(e){
+  well.addEventListener("click", function(e){
     var ed = e.target.closest("[data-edit]");
     if(ed){
-      var spot = spots.filter(function(s){ return s.id === ed.getAttribute("data-edit"); })[0];
-      if(spot) openDialog(spot);
+      var hit = spots.filter(function(s){ return s.id === ed.getAttribute("data-edit"); })[0];
+      if(hit) open(hit);
       return;
     }
-    var del = e.target.closest("[data-del]");
-    if(del){
-      var id = del.getAttribute("data-del");
-      var target = spots.filter(function(s){ return s.id === id; })[0];
-      if(target && confirm("删除「" + target.name + "」？")){
+    var kill = e.target.closest("[data-kill]");
+    if(kill){
+      var id = kill.getAttribute("data-kill");
+      var gone = spots.filter(function(s){ return s.id === id; })[0];
+      if(gone && confirm("把「" + gone.name + "」清掉？")){
         spots = spots.filter(function(s){ return s.id !== id; });
         save();
         render();
@@ -400,47 +572,38 @@
     }
   });
 
-  filterEl.addEventListener("input", render);
+  find.addEventListener("input", render);
 
-  /* ---- 导入导出 ---- */
-  document.getElementById("export-btn").addEventListener("click", function(){
+  /* ---------- 存档 ---------- */
+  document.getElementById("save-out").addEventListener("click", function(){
     var blob = new Blob([JSON.stringify(spots, null, 2)], {type:"application/json"});
     var url = URL.createObjectURL(blob);
     var a = document.createElement("a");
     a.href = url;
-    a.download = "景点分级.json";
+    a.download = "景点评级.json";
     a.click();
     URL.revokeObjectURL(url);
   });
 
-  var importFile = document.getElementById("import-file");
-  document.getElementById("import-btn").addEventListener("click", function(){ importFile.click(); });
-  importFile.addEventListener("change", function(){
-    var file = importFile.files[0];
-    if(!file) return;
+  var file = document.getElementById("file");
+  document.getElementById("save-in").addEventListener("click", function(){ file.click(); });
+  file.addEventListener("change", function(){
+    var f = file.files[0];
+    if(!f) return;
     var reader = new FileReader();
     reader.onload = function(){
       try{
         var data = JSON.parse(reader.result);
-        if(!Array.isArray(data)) throw new Error("格式不对");
-        spots = data.map(function(s){
-          return {
-            id: s.id || uid(),
-            name: String(s.name || "未命名"),
-            place: String(s.place || ""),
-            date: String(s.date || ""),
-            note: String(s.note || ""),
-            tier: isTier(s.tier) ? s.tier : "npc"
-          };
-        });
+        if(!Array.isArray(data)) throw new Error("这个文件不是存档");
+        spots = data.map(migrate);
         save();
         render();
       }catch(err){
-        alert("导入失败：" + err.message);
+        alert("读不进来：" + err.message);
       }
-      importFile.value = "";
+      file.value = "";
     };
-    reader.readAsText(file);
+    reader.readAsText(f);
   });
 
   render();
