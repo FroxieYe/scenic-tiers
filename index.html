@@ -63,7 +63,7 @@
 
   img{image-rendering:pixelated}
 
-  .cabinet{max-width:960px;margin:0 auto;padding:32px 16px 64px}
+  .cabinet{max-width:1120px;margin:0 auto;padding:32px 16px 64px}
 
   /* ---------- 顶部招牌 ---------- */
   .marquee{
@@ -141,37 +141,48 @@
   .tag .n{font-size:12px;color:#5C5C78;font-variant-numeric:tabular-nums;line-height:1.4}
 
   /* ---------- 方块（景点） ---------- */
-  .blocks{display:grid;grid-template-columns:repeat(auto-fill,208px);gap:12px;
-    align-content:start;justify-content:start}
+  .blocks{display:flex;flex-wrap:wrap;gap:4px;align-content:start}
 
   .block{
+    display:block;
     background:var(--c);
     color:var(--on);
-    padding:12px;
+    font-size:24px;
+    line-height:1.25;
+    padding:10px 12px;
     border:0;
+    cursor:pointer;
+    text-align:left;
+    white-space:nowrap;
+    max-width:260px;
+    overflow:hidden;
+    text-overflow:ellipsis;
     box-shadow:
-      inset 4px 4px 0 rgba(255,255,255,.34),
-      inset -4px -4px 0 rgba(0,0,0,.38),
-      4px 4px 0 #000;
+      inset 3px 3px 0 rgba(255,255,255,.34),
+      inset -3px -3px 0 rgba(0,0,0,.38),
+      3px 3px 0 #000;
     position:relative;
-    min-height:76px;
   }
-  .block h3{margin:0;font-size:24px;line-height:1.25;word-break:break-word;padding-right:56px}
-  .block .where{font-size:12px;opacity:.8;margin-top:4px}
-  .block .said{font-size:12px;opacity:.92;margin-top:8px;line-height:1.6}
+  .block:hover{filter:brightness(1.14)}
+  .block:active{
+    transform:translate(2px,2px);
+    box-shadow:
+      inset -3px -3px 0 rgba(255,255,255,.2),
+      inset 3px 3px 0 rgba(0,0,0,.4),
+      1px 1px 0 #000;
+  }
+  /* 写了一句话的，角上点一个点 */
+  .block.noted{padding-right:24px}
+  .block.noted::after{
+    content:"";position:absolute;top:9px;right:9px;
+    width:6px;height:6px;background:var(--on);opacity:.6;
+  }
 
   .block.drop{animation:drop .4s steps(8)}   /* 分步下落，不是平滑缓动 */
   @keyframes drop{from{transform:translateY(-200px)}to{transform:translateY(0)}}
 
-  .tools{position:absolute;top:8px;right:8px;display:flex;gap:4px}
-  .tools button{
-    font:inherit;font-size:12px;line-height:1;cursor:pointer;
-    background:rgba(0,0,0,.26);color:inherit;border:0;padding:5px 6px;
-  }
-  .tools button:hover{background:rgba(0,0,0,.52)}
-
   .gap{
-    grid-column:1/-1;
+    width:100%;
     color:#3E3E58;
     font-size:12px;
     margin:0;
@@ -241,6 +252,9 @@
   }
   .picker input:focus-visible + label{outline:var(--u) solid var(--o);outline-offset:2px}
   .acts{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:4px}
+  .acts.editing{grid-template-columns:auto 1fr 1fr}
+  button.key.danger{background:transparent;color:var(--z);box-shadow:inset 0 0 0 3px var(--z)}
+  button.key.danger:hover{background:var(--z);color:#fff}
 
   footer{margin-top:32px;color:#4A4A66;font-size:12px;line-height:1.8}
   footer a{color:var(--ink-dim)}
@@ -267,7 +281,6 @@
     .tag{flex-direction:row;align-items:center;gap:12px;flex-wrap:wrap}
     .tag .blurb{display:none}
     .tag .n{margin-left:auto}
-    .blocks{grid-template-columns:1fr}
     .picker{grid-template-columns:repeat(3,1fr)}
   }
 </style>
@@ -341,9 +354,10 @@
       <label for="f-said">一句话</label>
       <textarea id="f-said" maxlength="140" placeholder="不填也行"></textarea>
     </div>
-    <div class="acts">
+    <div class="acts" id="acts">
+      <button type="button" class="key danger" id="kill" hidden>删掉</button>
       <button type="button" class="key" id="drop-it">取消</button>
-      <button type="submit" class="key go" style="font-size:12px;padding:12px">放进去</button>
+      <button type="submit" class="key go" id="save" style="font-size:12px;padding:12px">放进去</button>
     </div>
   </form>
 </dialog>
@@ -452,17 +466,16 @@
 
       var blocks = mine.length
         ? mine.map(function(s){
-            return '<article class="block' + (s.id === landedId ? " drop" : "") + '">' +
-              '<div class="tools">' +
-                '<button data-edit="' + s.id + '" aria-label="改 ' + esc(s.name) + '">改</button>' +
-                '<button data-kill="' + s.id + '" aria-label="删掉 ' + esc(s.name) + '">×</button>' +
-              '</div>' +
-              '<h3>' + esc(s.name) + '</h3>' +
-              (s.where || s.when
-                ? '<p class="where">' + esc([s.where, s.when].filter(Boolean).join("　")) + '</p>'
-                : '') +
-              (s.said ? '<p class="said">' + esc(s.said) + '</p>' : '') +
-            '</article>';
+            /* 详情收进 title 和弹窗，方块本身只留名字 */
+            var detail = [s.name, [s.where, s.when].filter(Boolean).join("　"), s.said]
+                           .filter(Boolean).join("\n");
+            return '<button type="button" class="block' +
+                (s.id === landedId ? " drop" : "") + (s.said ? " noted" : "") + '"' +
+              ' data-open="' + s.id + '"' +
+              ' title="' + esc(detail) + '"' +
+              ' aria-label="' + esc(s.name + "，" + t.name + "档，打开详情") + '">' +
+              esc(s.name) +
+            '</button>';
           }).join("")
         : '<p class="gap">' + (q ? "这行没有匹配的" : "空行") + '</p>';
 
@@ -500,6 +513,9 @@
   var fWhere = document.getElementById("f-where");
   var fWhen  = document.getElementById("f-when");
   var fSaid  = document.getElementById("f-said");
+  var acts   = document.getElementById("acts");
+  var killBtn= document.getElementById("kill");
+  var saveBtn= document.getElementById("save");
 
   document.getElementById("picker").innerHTML = TIERS.map(function(t,i){
     return '<span style="--c:' + t.c + ';--on:' + t.on + '">' +
@@ -510,7 +526,10 @@
 
   function open(spot){
     editingId = spot ? spot.id : null;
-    document.getElementById("dlg-bar").textContent = spot ? "改一下" : "新方块";
+    document.getElementById("dlg-bar").textContent = spot ? spot.name : "新方块";
+    saveBtn.textContent = spot ? "存下来" : "放进去";
+    killBtn.hidden = !spot;
+    acts.classList.toggle("editing", !!spot);
     fName.value  = spot ? spot.name  : "";
     fWhere.value = spot ? spot.where : "";
     fWhen.value  = spot ? spot.when  : "";
@@ -554,22 +573,21 @@
   document.getElementById("add").addEventListener("click", function(){ open(null); });
 
   well.addEventListener("click", function(e){
-    var ed = e.target.closest("[data-edit]");
-    if(ed){
-      var hit = spots.filter(function(s){ return s.id === ed.getAttribute("data-edit"); })[0];
-      if(hit) open(hit);
-      return;
-    }
-    var kill = e.target.closest("[data-kill]");
-    if(kill){
-      var id = kill.getAttribute("data-kill");
-      var gone = spots.filter(function(s){ return s.id === id; })[0];
-      if(gone && confirm("把「" + gone.name + "」清掉？")){
-        spots = spots.filter(function(s){ return s.id !== id; });
-        save();
-        render();
-      }
-    }
+    var tile = e.target.closest("[data-open]");
+    if(!tile) return;
+    var hit = spots.filter(function(s){ return s.id === tile.getAttribute("data-open"); })[0];
+    if(hit) open(hit);
+  });
+
+  killBtn.addEventListener("click", function(){
+    var gone = spots.filter(function(s){ return s.id === editingId; })[0];
+    if(!gone) return;
+    if(!confirm("把「" + gone.name + "」清掉？")) return;
+    spots = spots.filter(function(s){ return s.id !== editingId; });
+    editingId = null;
+    save();
+    render();
+    dlg.close();
   });
 
   find.addEventListener("input", render);
