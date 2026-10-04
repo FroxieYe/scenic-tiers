@@ -120,6 +120,17 @@
   footer .hint{font-size:12px;color:var(--ink-3);margin-right:auto;max-width:46ch;line-height:1.55}
   .warn{font-size:12.5px;color:var(--t1);margin:14px 0 0}
 
+  /* 本地改动没发布时的提示条。没有它，浏览器里的旧草稿会悄悄挡住线上清单。 */
+  .draft[hidden]{display:none}
+  .draft{display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+         margin-top:16px;padding:10px 14px;border-radius:10px;
+         background:rgba(255,191,127,.12);border:1px solid rgba(255,191,127,.3)}
+  .draft .msg{font-size:12.5px;color:#FFD9AE;margin-right:auto;line-height:1.5}
+  .draft button{font-size:12px;font-weight:600;padding:6px 12px;border-radius:999px;
+                border:0;cursor:pointer;background:rgba(255,255,255,.14);color:var(--ink)}
+  .draft button:hover{background:rgba(255,255,255,.24)}
+  .draft button.drop{background:transparent;box-shadow:inset 0 0 0 1px rgba(255,255,255,.26)}
+
   /* ---------- 弹窗 ---------- */
   dialog{border:1px solid var(--line);border-radius:12px;background:#1E1E1E;color:var(--ink);
          padding:0;width:min(420px,92vw);box-shadow:0 30px 60px -20px rgba(0,0,0,.9)}
@@ -171,6 +182,11 @@
       <input type="search" id="find" placeholder="搜景点或国家" aria-label="搜索">
       <button class="btn primary" id="add">添加</button>
     </div>
+    <div class="draft" id="draft" hidden>
+      <span class="msg" id="draft-msg"></span>
+      <button id="draft-out">导出</button>
+      <button class="drop" id="draft-drop">丢弃草稿</button>
+    </div>
     <p class="warn" id="warn" hidden>这个浏览器不让本地文件存数据，改动不会留下。用本地服务打开，或先导出备份。</p>
   </header>
 
@@ -211,6 +227,7 @@
   </form>
 </dialog>
 
+<script src="spots.js"></script>
 <script>
 (function(){
   "use strict";
@@ -251,28 +268,46 @@
   };
   var FLAG_BASE = "https://cdn.jsdelivr.net/gh/HatScripts/circle-flags@gh-pages/flags/";
 
-  var SEED = [
-    { id:"seed-huangyan", name:"黄岩石窟", country:"中国", tier:"top" }
-  ];
-
   var KEY = "scenic-tiers-v1";
   var store = { ok:true };
+  var seq = 0;
+
+  /* 已发布清单来自 spots.js，是这个网址上所有人看到的版本 */
+  var PUBLISHED = (window.SPOTS || []).map(migrate);
+
+  /* 草稿基于哪个已发布版本；null 表示当前没有草稿，看到的就是已发布的 */
+  var draftBase = null;
+
   var spots = load();
   var editingId = null;
   var pick = "";
+
+  function hashOf(list){
+    var str = JSON.stringify(list.map(function(x){ return [x.name, x.country, x.tier]; }));
+    var h = 5381;
+    for(var i=0;i<str.length;i++){ h = ((h<<5) + h + str.charCodeAt(i)) | 0; }
+    return String(h);
+  }
 
   function load(){
     try{
       var raw = localStorage.getItem(KEY);
       if(raw){
         var p = JSON.parse(raw);
-        if(Array.isArray(p)) return p.map(migrate);
+        if(Array.isArray(p)){                       // 旧版本存的是裸数组
+          draftBase = "";
+          return p.map(migrate);
+        }
+        if(p && Array.isArray(p.spots)){
+          draftBase = String(p.base == null ? "" : p.base);
+          return p.spots.map(migrate);
+        }
       }
     }catch(e){
       store.ok = false;
       document.getElementById("warn").hidden = false;
     }
-    return SEED.slice();
+    return PUBLISHED.slice();
   }
 
   /* 老版本有 place/where（地点）、date/when（时间）、note/said（一句话），已全部取消，读进来即丢弃。
@@ -280,7 +315,7 @@
   function migrate(s){
     var hadPlace = !!(s.where || s.place);
     return {
-      id: s.id || uid(),
+      id: s.id || ("p" + (++seq) + "-" + Math.random().toString(36).slice(2,6)),
       name: String(s.name || "未命名"),
       country: String(s.country || (hadPlace ? "中国" : "")),
       tier: isTier(s.tier) ? s.tier : "npc"
@@ -289,11 +324,32 @@
 
   function save(){
     if(!store.ok) return;
-    try{ localStorage.setItem(KEY, JSON.stringify(spots)); }
-    catch(e){
+    draftBase = hashOf(PUBLISHED);
+    try{
+      localStorage.setItem(KEY, JSON.stringify({ base: draftBase, spots: bare(spots) }));
+    }catch(e){
       store.ok = false;
       document.getElementById("warn").hidden = false;
     }
+  }
+
+  function bare(list){
+    return list.map(function(s){
+      return { name:s.name, country:s.country, tier:s.tier };
+    });
+  }
+
+  /* 导出的就是可以直接提交进仓库的 spots.js */
+  function spotsJs(list){
+    return "/* 景点清单。改这个文件就能更新网站，不用碰 index.html。\n" +
+           "   tier 取 shen / hang / top / ren / npc / la\n" +
+           "   （神级 / 夯 / 顶级 / 人上人 / npc / 拉完了） */\n" +
+           "window.SPOTS = [\n" +
+           list.map(function(s){
+             return '  { "name": ' + JSON.stringify(s.name) +
+                    ', "country": ' + JSON.stringify(s.country) +
+                    ', "tier": ' + JSON.stringify(s.tier) + ' }';
+           }).join(",\n") + "\n];\n";
   }
 
   function isTier(k){
@@ -397,7 +453,29 @@
 
     document.getElementById("countries").innerHTML =
       Object.keys(ISO).map(function(c){ return '<option value="' + esc(c) + '">'; }).join("");
+
+    paintDraft();
   }
+
+  var draftBar = document.getElementById("draft");
+  function paintDraft(){
+    var on = draftBase !== null;
+    draftBar.hidden = !on;
+    if(!on) return;
+    var stale = draftBase !== hashOf(PUBLISHED);
+    document.getElementById("draft-msg").textContent = stale
+      ? "本地草稿 " + spots.length + " 处，还没发布；而且已发布的清单有更新——丢弃草稿就能看到最新版"
+      : "本地草稿 " + spots.length + " 处，还没发布。导出后提交 spots.js 才会出现在网址上。";
+  }
+
+  document.getElementById("draft-drop").addEventListener("click", function(){
+    if(!confirm("丢弃本地草稿，回到已发布的清单？")) return;
+    try{ localStorage.removeItem(KEY); }catch(e){}
+    draftBase = null;
+    spots = PUBLISHED.slice();
+    pick = "";
+    render();
+  });
 
   /* ---------- 弹窗 ---------- */
   var dlg  = document.getElementById("dlg");
@@ -497,15 +575,18 @@
   find.addEventListener("input", render);
 
   /* ---------- 导入导出 ---------- */
-  document.getElementById("out").addEventListener("click", function(){
-    var blob = new Blob([JSON.stringify(spots, null, 2)], {type:"application/json"});
+  function exportSpots(){
+    var blob = new Blob([spotsJs(spots)], {type:"text/javascript;charset=utf-8"});
     var url = URL.createObjectURL(blob);
     var a = document.createElement("a");
-    a.href = url; a.download = "去过的地方.json"; a.click();
+    a.href = url; a.download = "spots.js"; a.click();
     URL.revokeObjectURL(url);
-  });
+  }
+  document.getElementById("out").addEventListener("click", exportSpots);
+  document.getElementById("draft-out").addEventListener("click", exportSpots);
 
   var file = document.getElementById("file");
+  file.setAttribute("accept", ".js,.json,application/json,text/javascript");
   document.getElementById("in").addEventListener("click", function(){ file.click(); });
   file.addEventListener("change", function(){
     var f = file.files[0];
@@ -513,7 +594,10 @@
     var reader = new FileReader();
     reader.onload = function(){
       try{
-        var data = JSON.parse(reader.result);
+        var txt = String(reader.result);
+        var i = txt.indexOf("["), j = txt.lastIndexOf("]");   /* spots.js 和裸 JSON 都吃 */
+        if(i < 0 || j < i) throw new Error("这个文件里没有清单");
+        var data = JSON.parse(txt.slice(i, j + 1));
         if(!Array.isArray(data)) throw new Error("这个文件不是备份");
         spots = data.map(migrate);
         pick = "";
