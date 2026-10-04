@@ -5,208 +5,155 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>去过的地方</title>
 <meta name="description" content="我去过的景点，五档分级：夯、顶级、人上人、npc、拉完了。">
-<meta name="theme-color" content="#FAF9F7" media="(prefers-color-scheme: light)">
-<meta name="theme-color" content="#0C0C0D" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#121212">
 <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
 <style>
   :root{
-    color-scheme:light dark;
+    color-scheme:dark;
 
-    --bg:#FAF9F7;
-    --surface:#FFFFFF;
-    --surface-2:#F3F2EF;
-    --line:#E7E4DE;
-    --line-soft:#EFEDE8;
+    /* 取自模板封面的实际像素：条目区 #1A1A1A，行缝纯黑，胶囊纯白 */
+    --bg:#121212;
+    --grid:#000000;
+    --lane:#1A1A1A;
+    --tile:#262626;
+    --tile-h:#343434;
 
-    --ink:#16161A;
-    --ink-2:#56555C;
-    --ink-3:#6F6E78;
+    --ink:#F2F2F2;
+    --ink-2:#A8A8A8;
+    --ink-3:#6E6E6E;
+    --line:#2E2E2E;
 
-    --accent:#4F46E5;
-    --accent-weak:rgba(79,70,229,.1);
-    --accent-on:#FFFFFF;
-    --danger:#C0392B;
-
-    --shadow-sm:0 1px 2px rgba(22,22,26,.05);
-    --shadow-md:0 1px 3px rgba(22,22,26,.06),0 8px 24px -10px rgba(22,22,26,.16);
-    --shadow-lg:0 1px 2px rgba(22,22,26,.08),0 28px 56px -18px rgba(22,22,26,.3);
-
-    --r-sm:8px; --r-md:12px; --r-lg:18px;
+    /* TierMaker 标准档位色，配黑字，五档对比度都在 8:1 以上 */
+    --t1:#FF7F7F;
+    --t2:#FFBF7F;
+    --t3:#FFFF7F;
+    --t4:#7FFF7F;
+    --t5:#7FFFFF;
 
     --sans:-apple-system,BlinkMacSystemFont,"PingFang SC","Hiragino Sans GB",
            "Microsoft YaHei",system-ui,"Segoe UI",sans-serif;
-  }
-  @media (prefers-color-scheme:dark){
-    :root{
-      --bg:#0C0C0D;
-      --surface:#141417;
-      --surface-2:#1C1C20;
-      --line:#26262B;
-      --line-soft:#1E1E22;
-
-      --ink:#F4F4F5;
-      --ink-2:#A6A6AE;
-      --ink-3:#8A8A95;
-
-      --accent:#8B82FF;
-      --accent-weak:rgba(139,130,255,.16);
-      --accent-on:#0C0C0D;
-      --danger:#FF7A6B;
-
-      --shadow-sm:none;
-      --shadow-md:0 0 0 1px var(--line);
-      --shadow-lg:0 0 0 1px var(--line),0 28px 56px -18px rgba(0,0,0,.8);
-    }
   }
 
   *{box-sizing:border-box}
   html{background:var(--bg)}
   body{
     margin:0;background:var(--bg);color:var(--ink);
-    font-family:var(--sans);font-size:16px;line-height:1.55;
+    font-family:var(--sans);font-size:16px;line-height:1.5;
     -webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;
   }
-  .page{max-width:860px;margin:0 auto;padding:clamp(36px,6vw,76px) clamp(18px,4vw,28px) 120px}
+  .page{max-width:1080px;margin:0 auto;padding:clamp(28px,5vw,56px) clamp(14px,3vw,24px) 100px}
   button,input{font:inherit}
-  :focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:4px}
+  :focus-visible{outline:2px solid #FFF;outline-offset:2px}
 
-  /* ---------- 头部 ---------- */
-  .hero{margin-bottom:clamp(28px,4vw,40px)}
-  h1{margin:0;font-size:clamp(32px,5.6vw,46px);line-height:1.08;
-     font-weight:700;letter-spacing:-.038em}
-  .counts{margin:12px 0 0;display:flex;align-items:baseline;gap:8px;
-          font-size:14px;color:var(--ink-2)}
-  .counts b{font-size:20px;font-weight:700;color:var(--ink);
-            font-variant-numeric:tabular-nums;letter-spacing:-.02em}
-  .counts .sep{color:var(--line);font-size:16px}
+  /* ---------- 页头 ---------- */
+  .top{margin-bottom:22px}
+  h1{margin:0;font-size:clamp(26px,4.4vw,36px);font-weight:800;letter-spacing:-.03em;line-height:1.1}
+  .counts{margin:9px 0 0;font-size:13.5px;color:var(--ink-2)}
+  .counts b{color:var(--ink);font-weight:700;font-variant-numeric:tabular-nums}
 
-  /* 国旗墙 —— 同时就是国家筛选器 */
-  .wall{display:flex;flex-wrap:wrap;gap:14px;margin-top:24px}
-  .pin{
-    position:relative;cursor:pointer;background:none;border:0;padding:0;
-    width:40px;height:40px;border-radius:50%;
-    transition:transform .14s cubic-bezier(.2,.8,.3,1),opacity .14s;
-  }
-  .pin .flag{width:40px;height:40px;border-radius:50%;display:block;
-             box-shadow:0 0 0 1px rgba(22,22,26,.1) inset}
-  .pin .num{
-    position:absolute;right:-4px;bottom:-4px;min-width:17px;height:17px;
-    padding:0 4px;border-radius:9px;background:var(--surface);color:var(--ink-2);
-    border:1px solid var(--line);font-size:10px;font-weight:600;line-height:15px;
-    font-variant-numeric:tabular-nums;
-  }
+  .wall{display:flex;flex-wrap:wrap;gap:13px;margin-top:18px}
+  .pin{position:relative;cursor:pointer;background:none;border:0;padding:0;
+       width:38px;height:38px;border-radius:50%;transition:transform .14s,opacity .14s}
+  .pin .flag{width:38px;height:38px;border-radius:50%;display:block;background:var(--tile)}
+  .pin .num{position:absolute;right:-4px;bottom:-4px;min-width:17px;height:17px;padding:0 4px;
+            border-radius:9px;background:var(--bg);color:var(--ink-2);border:1px solid var(--line);
+            font-size:10px;font-weight:700;line-height:15px;font-variant-numeric:tabular-nums}
   .pin:hover{transform:translateY(-2px)}
-  .wall[data-filtering="1"] .pin{opacity:.34}
+  .wall[data-filtering="1"] .pin{opacity:.3}
   .wall[data-filtering="1"] .pin[aria-pressed="true"]{opacity:1}
-  .pin[aria-pressed="true"] .flag{box-shadow:0 0 0 2px var(--bg),0 0 0 4px var(--accent)}
-  .pin.all{
-    display:grid;place-items:center;background:var(--surface);border:1px solid var(--line);
-    font-size:11px;font-weight:600;color:var(--ink-2);letter-spacing:-.02em;
-  }
-  .pin.all[aria-pressed="true"]{border-color:transparent;box-shadow:0 0 0 2px var(--accent);color:var(--accent)}
+  .pin[aria-pressed="true"] .flag{box-shadow:0 0 0 2px var(--bg),0 0 0 4px #FFF}
+  .pin.all{display:grid;place-items:center;background:var(--tile);color:var(--ink-2);
+           font-size:11px;font-weight:700;letter-spacing:-.02em}
+  .pin.all[aria-pressed="true"]{background:#FFF;color:#000}
   .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 
-  /* ---------- 工具条 ---------- */
-  .bar{display:flex;gap:8px;align-items:center;margin-top:26px}
+  .bar{display:flex;gap:8px;align-items:center;margin-top:20px}
   input[type=search],input[type=text]{
-    color:var(--ink);background:var(--surface);border:1px solid var(--line);
-    border-radius:var(--r-sm);padding:9px 13px;font-size:14px;
-    transition:border-color .12s,box-shadow .12s;box-shadow:var(--shadow-sm);
+    color:var(--ink);background:var(--tile);border:1px solid transparent;border-radius:999px;
+    padding:10px 16px;font-size:14px;transition:border-color .12s;
   }
-  input[type=search]{flex:1;min-width:0;max-width:320px}
-  input:hover{border-color:var(--ink-3)}
-  input:focus{outline:0;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-weak)}
+  input[type=search]{flex:1;min-width:0;max-width:300px}
+  input:hover{border-color:var(--line)}
+  input:focus{outline:0;border-color:#FFF}
   ::placeholder{color:var(--ink-3)}
 
-  .btn{
-    cursor:pointer;border-radius:var(--r-sm);font-size:14px;font-weight:600;
-    padding:10px 17px;border:1px solid transparent;transition:opacity .12s,border-color .12s,color .12s;
-    white-space:nowrap;
-  }
-  .btn.primary{background:var(--accent);color:var(--accent-on);box-shadow:var(--shadow-sm)}
-  .btn.primary:hover{opacity:.88}
-  .btn.ghost{background:transparent;color:var(--ink-2);border-color:var(--line);font-weight:500}
-  .btn.ghost:hover{border-color:var(--ink-3);color:var(--ink)}
+  /* 封面右下那个白色圆角胶囊，拿来做主按钮 */
+  .btn{cursor:pointer;border-radius:999px;font-size:14px;font-weight:700;padding:10px 22px;
+       border:0;white-space:nowrap;transition:opacity .12s,background .12s}
+  .btn.primary{background:#FFF;color:#000}
+  .btn.primary:hover{opacity:.84}
+  .btn.ghost{background:var(--tile);color:var(--ink-2);font-weight:600}
+  .btn.ghost:hover{background:var(--tile-h);color:var(--ink)}
 
-  /* ---------- 档位 ---------- */
-  .tier{margin-top:clamp(26px,3.4vw,38px)}
-  .tier-head{display:flex;align-items:center;gap:10px;margin-bottom:10px}
-  .tier-head h2{margin:0;font-size:25px;font-weight:700;letter-spacing:-.03em;line-height:1.2}
-  .tier-head .blurb{margin-left:auto;font-size:12.5px;color:var(--ink-3)}
+  /* ---------- 榜单本体 ---------- */
+  .board{background:var(--grid);border:4px solid var(--grid);border-radius:6px;
+         display:grid;gap:4px;overflow:hidden}
+  .tier{display:grid;grid-template-columns:132px 1fr;gap:4px}
+  .label{
+    background:var(--c);color:#000;display:grid;place-content:center;align-content:center;
+    text-align:center;padding:14px 8px;min-height:106px;
+  }
+  .label .nm{font-size:26px;font-weight:800;letter-spacing:-.025em;line-height:1.15}
+  .label .n{font-size:12px;font-weight:700;opacity:.52;margin-top:5px;font-variant-numeric:tabular-nums}
+  .label .blurb{font-size:10.5px;font-weight:600;opacity:.46;margin-top:2px;line-height:1.3}
 
-  /* 排名用这枚徽章的填充深浅表达，不是五种颜色 */
-  .badge{
-    font-size:12px;font-weight:650;line-height:1;padding:5px 9px;border-radius:999px;
-    font-variant-numeric:tabular-nums;
+  .lane{background:var(--lane);display:flex;flex-wrap:wrap;gap:6px;padding:7px;
+        align-content:flex-start;min-height:106px}
+  .tile{
+    width:92px;height:92px;background:var(--tile);border:0;border-radius:4px;cursor:pointer;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:7px;
+    padding:7px 5px;transition:background .12s;
   }
-  .b1{background:var(--ink);color:var(--bg)}
-  .b2{background:color-mix(in srgb,var(--ink) 62%,transparent);color:var(--bg)}
-  .b3{background:color-mix(in srgb,var(--ink) 30%,transparent);color:var(--ink)}
-  .b4{background:var(--surface-2);color:var(--ink-2)}
-  .b5{background:transparent;color:var(--ink-2);box-shadow:inset 0 0 0 1px var(--line)}
-
-  .card{
-    background:var(--surface);border:1px solid var(--line);
-    border-radius:var(--r-lg);box-shadow:var(--shadow-sm);overflow:hidden;
+  .tile:hover{background:var(--tile-h)}
+  .tile .flag{width:30px;height:30px;border-radius:50%;flex:none;background:var(--tile-h)}
+  .tile .nm{
+    font-size:11.5px;line-height:1.25;color:var(--ink);text-align:center;font-weight:500;
+    display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;
+    word-break:break-all;width:100%;
   }
-  .rows{list-style:none;margin:0;padding:6px;
-        display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:2px}
-  .rows>li{min-width:0}
-  .row{
-    width:100%;text-align:left;cursor:pointer;background:transparent;border:0;
-    border-radius:var(--r-md);display:flex;align-items:center;gap:12px;
-    padding:9px 11px;transition:background .12s;
-  }
-  .row:hover{background:var(--surface-2)}
-  .flag{width:28px;height:28px;border-radius:50%;flex:none;display:block;
-        box-shadow:0 0 0 1px rgba(22,22,26,.1) inset;background:var(--surface-2)}
-  .ph{display:grid;place-items:center;font-size:12px;font-weight:600;color:var(--ink-3)}
-  .nm{font-size:15.5px;font-weight:550;letter-spacing:-.011em;color:var(--ink);
-      overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
-  .cy{margin-left:auto;font-size:12.5px;color:var(--ink-3);white-space:nowrap;flex:none}
-  .none{grid-column:1/-1;padding:14px 12px;font-size:13.5px;color:var(--ink-3);margin:0}
+  .ph{display:grid;place-items:center;font-size:13px;font-weight:700;color:var(--ink-3)}
+  .empty{align-self:center;font-size:12px;color:#454545;padding-left:6px}
 
   /* ---------- 页脚 ---------- */
-  footer{margin-top:clamp(40px,5vw,60px);padding-top:22px;border-top:1px solid var(--line);
-         display:flex;gap:10px;align-items:center;flex-wrap:wrap}
-  footer .hint{font-size:12.5px;color:var(--ink-3);margin-right:auto;max-width:46ch;line-height:1.6}
-  .warn{font-size:12.5px;color:var(--danger);margin:14px 0 0}
+  footer{margin-top:30px;display:flex;gap:9px;align-items:center;flex-wrap:wrap}
+  footer .hint{font-size:12px;color:var(--ink-3);margin-right:auto;max-width:46ch;line-height:1.55}
+  .warn{font-size:12.5px;color:var(--t1);margin:14px 0 0}
 
   /* ---------- 弹窗 ---------- */
-  dialog{
-    border:0;border-radius:var(--r-lg);background:var(--surface);color:var(--ink);padding:0;
-    width:min(400px,92vw);box-shadow:var(--shadow-lg);
-  }
-  dialog::backdrop{background:rgba(12,12,13,.4);backdrop-filter:blur(3px)}
-  .dlg-head{display:flex;align-items:center;gap:11px;padding:20px 22px 0}
-  .dlg-head .t{font-size:17px;font-weight:650;letter-spacing:-.015em}
-  form{padding:18px 22px 20px;display:grid;gap:14px}
+  dialog{border:1px solid var(--line);border-radius:12px;background:#1E1E1E;color:var(--ink);
+         padding:0;width:min(380px,92vw);box-shadow:0 30px 60px -20px rgba(0,0,0,.9)}
+  dialog::backdrop{background:rgba(0,0,0,.66)}
+  .dlg-head{display:flex;align-items:center;gap:10px;padding:18px 20px 0}
+  .dlg-head .flag{width:26px;height:26px;border-radius:50%}
+  .dlg-head .t{font-size:16px;font-weight:700;letter-spacing:-.01em}
+  form{padding:16px 20px 18px;display:grid;gap:13px}
   .field{display:grid;gap:6px}
-  .field label{font-size:12.5px;color:var(--ink-2);font-weight:550}
-  .field input{width:100%}
+  .field label{font-size:12px;color:var(--ink-2);font-weight:600}
+  .field input{width:100%;border-radius:8px;background:#141414;border:1px solid var(--line)}
 
   .picker{display:grid;grid-template-columns:repeat(5,1fr);gap:5px}
   .picker span{position:relative;display:block}
   .picker input{position:absolute;opacity:0;width:0;height:0}
   .picker label{
-    display:block;text-align:center;font-size:12.5px;line-height:1.35;cursor:pointer;
-    padding:9px 2px;border:1px solid var(--line);border-radius:var(--r-sm);color:var(--ink-2);
-    user-select:none;transition:border-color .12s,color .12s,background .12s;
+    display:block;text-align:center;font-size:12px;line-height:1.3;cursor:pointer;padding:9px 2px;
+    border-radius:7px;color:#000;background:var(--c);opacity:.34;font-weight:700;
+    user-select:none;transition:opacity .12s;
   }
-  .picker label:hover{border-color:var(--ink-3)}
-  .picker input:checked + label{
-    background:var(--accent);border-color:var(--accent);color:var(--accent-on);font-weight:650;
-  }
-  .picker input:focus-visible + label{outline:2px solid var(--accent);outline-offset:2px}
+  .picker label:hover{opacity:.6}
+  .picker input:checked + label{opacity:1}
+  .picker input:focus-visible + label{outline:2px solid #FFF;outline-offset:2px}
 
-  .acts{display:flex;gap:8px;justify-content:flex-end;margin-top:4px}
-  .acts .kill{margin-right:auto;color:var(--danger);border-color:transparent}
-  .acts .kill:hover{border-color:var(--danger);color:var(--danger)}
+  .acts{display:flex;gap:8px;justify-content:flex-end;margin-top:3px}
+  .acts .kill{margin-right:auto;background:transparent;color:#FF8A7A}
+  .acts .kill:hover{background:rgba(255,138,122,.14);color:#FF8A7A}
 
-  @media (max-width:620px){
-    .rows{grid-template-columns:1fr}
-    .tier-head .blurb{display:none}
-    .pin,.pin .flag{width:36px;height:36px}
+  @media (max-width:760px){
+    .tier{grid-template-columns:86px 1fr}
+    .label{padding:10px 5px;min-height:96px}
+    .label .nm{font-size:19px}
+    .label .blurb{display:none}
+    .lane{min-height:96px;gap:5px;padding:5px}
+    .tile{width:80px;height:80px}
     .picker{grid-template-columns:repeat(3,1fr)}
   }
   @media (prefers-reduced-motion:reduce){*{transition:none!important}}
@@ -215,12 +162,9 @@
 <body>
 <div class="page">
 
-  <header class="hero">
+  <header class="top">
     <h1>去过的地方</h1>
-    <p class="counts">
-      <b id="n-spots">0</b> 处 <span class="sep">/</span>
-      <b id="n-countries">0</b> 个国家
-    </p>
+    <p class="counts"><b id="n-spots">0</b> 处 · <b id="n-countries">0</b> 个国家</p>
     <div class="wall" id="wall" role="group" aria-label="按国家筛选"></div>
     <div class="bar">
       <input type="search" id="find" placeholder="搜景点或国家" aria-label="搜索">
@@ -229,7 +173,7 @@
     <p class="warn" id="warn" hidden>这个浏览器不让本地文件存数据，改动不会留下。用本地服务打开，或先导出备份。</p>
   </header>
 
-  <main id="list"></main>
+  <main class="board" id="board"></main>
 
   <footer>
     <p class="hint">记录存在这台设备的浏览器里，不上传。换设备或清缓存前记得导出。</p>
@@ -241,7 +185,7 @@
 
 <dialog id="dlg">
   <div class="dlg-head">
-    <img class="flag" id="dlg-flag" alt="" width="28" height="28">
+    <img class="flag" id="dlg-flag" alt="" width="26" height="26">
     <span class="t" id="dlg-title">添加景点</span>
   </div>
   <form method="dialog" id="form">
@@ -270,12 +214,13 @@
 (function(){
   "use strict";
 
+  /* 五档。颜色沿用 TierMaker 标准色，标签一律黑字。 */
   var TIERS = [
-    { key:"hang", name:"夯",     blurb:"值得专程飞一趟", b:"b1" },
-    { key:"top",  name:"顶级",   blurb:"路过必须进去",   b:"b2" },
-    { key:"ren",  name:"人上人", blurb:"去了不亏",       b:"b3" },
-    { key:"npc",  name:"npc",    blurb:"有它没它一样",   b:"b4" },
-    { key:"la",   name:"拉完了", blurb:"劝退",           b:"b5" }
+    { key:"hang", name:"夯",     blurb:"值得专程飞一趟", c:"var(--t1)" },
+    { key:"top",  name:"顶级",   blurb:"路过必须进去",   c:"var(--t2)" },
+    { key:"ren",  name:"人上人", blurb:"去了不亏",       c:"var(--t3)" },
+    { key:"npc",  name:"npc",    blurb:"有它没它一样",   c:"var(--t4)" },
+    { key:"la",   name:"拉完了", blurb:"劝退",           c:"var(--t5)" }
   ];
 
   /* 国家名 → ISO 两位码，用来取圆形国旗。认不出来的退回首字占位圆。 */
@@ -312,7 +257,7 @@
   var store = { ok:true };
   var spots = load();
   var editingId = null;
-  var pick = "";                /* 当前国家筛选，空 = 全部 */
+  var pick = "";
 
   function load(){
     try{
@@ -367,12 +312,11 @@
   }
 
   /* 认得出国家就上圆形国旗，认不出就用首字占位圆，两者同尺寸同位置 */
-  function flagHtml(cn, cls){
-    var code = iso(cn);
-    var label = cn || "未填";
+  function flagHtml(cn, cls, px){
+    var code = iso(cn), label = cn || "未填";
     if(code){
       return '<img class="' + cls + '" src="' + FLAG_BASE + code + '.svg"' +
-             ' alt="" width="28" height="28" loading="lazy" decoding="async"' +
+             ' alt="" width="' + px + '" height="' + px + '" loading="lazy" decoding="async"' +
              ' onerror="this.replaceWith(Object.assign(document.createElement(\'span\'),' +
              '{className:\'' + cls + ' ph\',textContent:' + JSON.stringify(label.slice(0,1)) + '}))">';
     }
@@ -391,9 +335,9 @@
   }
 
   /* ---------- 渲染 ---------- */
-  var list = document.getElementById("list");
-  var find = document.getElementById("find");
-  var wall = document.getElementById("wall");
+  var board = document.getElementById("board");
+  var find  = document.getElementById("find");
+  var wall  = document.getElementById("wall");
 
   function visible(){
     var q = find.value.trim().toLowerCase();
@@ -408,38 +352,38 @@
     var shown = visible();
     var filtering = !!pick || !!find.value.trim();
 
-    list.innerHTML = TIERS.map(function(t){
+    board.innerHTML = TIERS.map(function(t){
       var mine = shown.filter(function(s){ return s.tier === t.key; });
-      var rows = mine.length
+      var tiles = mine.length
         ? mine.map(function(s){
-            return '<li><button type="button" class="row" data-open="' + s.id + '"' +
+            return '<button type="button" class="tile" data-open="' + s.id + '"' +
+              ' title="' + esc(s.name + (s.country ? "　" + s.country : "")) + '"' +
               ' aria-label="' + esc(s.name + "，" + (s.country||"未填") + "，" + t.name + "，打开详情") + '">' +
-              flagHtml(s.country, "flag") +
+              flagHtml(s.country, "flag", 30) +
               '<span class="nm">' + esc(s.name) + '</span>' +
-              '<span class="cy">' + esc(s.country || "—") + '</span>' +
-            '</button></li>';
+            '</button>';
           }).join("")
-        : '<li class="none">' + (filtering ? "没有匹配的" : "还没有") + '</li>';
+        : '<p class="empty">' + (filtering ? "没有匹配的" : "还没有") + '</p>';
 
-      return '<section class="tier">' +
-        '<div class="tier-head">' +
-          '<h2>' + esc(t.name) + '</h2>' +
-          '<span class="badge ' + t.b + '">' + mine.length + '</span>' +
-          '<span class="blurb">' + esc(t.blurb) + '</span>' +
+      return '<section class="tier" style="--c:' + t.c + '">' +
+        '<div class="label">' +
+          '<div class="nm">' + esc(t.name) + '</div>' +
+          '<div class="n">' + mine.length + '</div>' +
+          '<div class="blurb">' + esc(t.blurb) + '</div>' +
         '</div>' +
-        '<div class="card"><ul class="rows">' + rows + '</ul></div>' +
+        '<div class="lane">' + tiles + '</div>' +
       '</section>';
     }).join("");
 
     var cs = countries();
     wall.setAttribute("data-filtering", pick ? "1" : "0");
     wall.innerHTML =
-      '<button class="pin all" data-country="" aria-pressed="' + (!pick) + '"' +
-        ' title="全部">全部<span class="sr">，共 ' + spots.length + ' 处</span></button>' +
+      '<button class="pin all" data-country="" aria-pressed="' + (!pick) + '" title="全部">全部' +
+        '<span class="sr">，共 ' + spots.length + ' 处</span></button>' +
       cs.map(function(c){
         return '<button class="pin" data-country="' + esc(c.name) + '"' +
           ' aria-pressed="' + (pick === c.name) + '" title="' + esc(c.name) + '">' +
-          flagHtml(c.name, "flag") +
+          flagHtml(c.name, "flag", 38) +
           '<span class="num">' + c.n + '</span>' +
           '<span class="sr">' + esc(c.name) + '，' + c.n + ' 处</span>' +
         '</button>';
@@ -463,7 +407,7 @@
   var dlgFlag  = document.getElementById("dlg-flag");
 
   document.getElementById("picker").innerHTML = TIERS.map(function(t,i){
-    return '<span>' +
+    return '<span style="--c:' + t.c + '">' +
       '<input type="radio" name="tier" id="p-' + t.key + '" value="' + t.key + '"' + (i===1?" checked":"") + '>' +
       '<label for="p-' + t.key + '">' + esc(t.name) + '</label>' +
     '</span>';
@@ -532,10 +476,10 @@
   });
   document.getElementById("add").addEventListener("click", function(){ open(null); });
 
-  list.addEventListener("click", function(e){
-    var row = e.target.closest("[data-open]");
-    if(!row) return;
-    var hit = spots.filter(function(s){ return s.id === row.getAttribute("data-open"); })[0];
+  board.addEventListener("click", function(e){
+    var tile = e.target.closest("[data-open]");
+    if(!tile) return;
+    var hit = spots.filter(function(s){ return s.id === tile.getAttribute("data-open"); })[0];
     if(hit) open(hit);
   });
 
