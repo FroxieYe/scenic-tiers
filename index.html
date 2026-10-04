@@ -3,365 +3,250 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>景点评级 — 从夯到拉完了</title>
+<title>去过的地方</title>
 <meta name="description" content="我去过的景点，五档分级：夯、顶级、人上人、npc、拉完了。">
-<meta name="theme-color" content="#141210">
+<meta name="theme-color" content="#F8F8F6" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0E0E0E" media="(prefers-color-scheme: dark)">
 <style>
-  /* Zpix（最像素）· 个人项目免费授权 · github.com/SolidZORO/zpix-pixel-font */
-  @font-face{
-    font-family:"Zpix";
-    src:url("zpix.woff2") format("woff2");
-    font-weight:normal;
-    font-style:normal;
-    font-display:swap;
-  }
-
   :root{
-    color-scheme:dark;
+    color-scheme:light dark;
 
-    /* 机柜：暖调炭灰，不是冷蓝黑 —— 高饱和色压在冷黑底上才会变灯管 */
-    --void:#141210;
-    --well:#1D1A17;
-    --grid:#272320;
-    --edge:#3E3A35;
-    --panel:#221E1A;
+    --bg:#F8F8F6;
+    --raise:#FFFFFF;
+    --line:#E2E2DE;
+    --line-soft:#EDEDE9;
+    --hover:#F0F0EC;
 
-    --ink:#EAE3D8;
-    --ink-dim:#9C9284;
-    --ghost:#7A7165;
-    --focus:#D9A54C;
+    --ink:#111111;
+    --ink-2:#5A5A58;
+    --ink-3:#6E6E6C;
 
-    /* 档位色：暖色高饱和 → 中性 → 冷色低明度。
-       平均饱和 34%（原来 79%）。填充色与档位名文字色分开：
-       填充可以暗，压在井底上的档位名必须亮到 4.5:1。 */
-    --hang:#BA4836;  --hang-on:#F2EADC;  --hang-ink:#CA7E72;
-    --top:#BF8640;   --top-on:#1D1A17;   --top-ink:#C79E6B;
-    --ren:#B9A255;   --ren-on:#1D1A17;   --ren-ink:#C7B475;
-    --npc:#78876E;   --npc-on:#1D1A17;   --npc-ink:#97A38F;
-    --la:#515B6C;    --la-on:#F2EADC;    --la-ink:#919AAC;
+    /* 排名不靠颜色，靠字号和墨色。每一级都算过对比度。 */
+    --r1:#000000;
+    --r2:#1A1A1A;
+    --r3:#3D3D3D;
+    --r4:#5F5F5F;
+    --r5:#8A8A8A;
 
-    /* 一切都踩 4px 模数 */
-    --u:4px;
-    --cell:20px;
+    --accent:#1D2FD8;
+    --accent-weak:rgba(29,47,216,.09);
+    --accent-on:#FFFFFF;
+    --danger:#C0392B;
+
+    --sans:-apple-system,BlinkMacSystemFont,"PingFang SC","Hiragino Sans GB",
+           "Microsoft YaHei",system-ui,"Segoe UI",sans-serif;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --bg:#0E0E0E;
+      --raise:#161616;
+      --line:#2A2A2A;
+      --line-soft:#1E1E1E;
+      --hover:#1A1A1A;
+
+      --ink:#F2F2F2;
+      --ink-2:#A8A8A6;
+      --ink-3:#8E8E8C;
+
+      --r1:#FFFFFF;
+      --r2:#E8E8E8;
+      --r3:#BDBDBD;
+      --r4:#949494;
+      --r5:#6E6E6E;
+
+      --accent:#8A96FF;
+      --accent-weak:rgba(138,150,255,.14);
+      --accent-on:#0E0E0E;
+      --danger:#FF7A6B;
+    }
   }
 
   *{box-sizing:border-box}
-  input,button,textarea,select{font:inherit}
-
-  html{background:var(--void)}
+  html{background:var(--bg)}
   body{
-    margin:0;
-    background:var(--void);
-    color:var(--ink);
-    font-family:"Zpix","Courier New",monospace;
-    font-size:12px;
-    line-height:1.75;
-    font-weight:normal;
-    font-synthesis:none;              /* 像素字不能合成粗体，会糊 */
-    -webkit-font-smoothing:none;
-    -moz-osx-font-smoothing:grayscale;
+    margin:0;background:var(--bg);color:var(--ink);
+    font-family:var(--sans);font-size:16px;line-height:1.6;
+    -webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;
   }
-  /* 字号只取 12 的整数倍，否则点阵会插值模糊 */
-  .t12{font-size:12px}
-  .t24{font-size:24px}
+  .page{max-width:820px;margin:0 auto;padding:clamp(40px,7vw,88px) clamp(20px,5vw,32px) 120px}
 
-  img{image-rendering:pixelated}
+  /* ---------- 页头 ---------- */
+  .masthead{margin-bottom:clamp(32px,5vw,52px)}
+  .title-row{display:flex;align-items:baseline;gap:20px;flex-wrap:wrap}
+  h1{margin:0;font-size:clamp(30px,5.4vw,44px);line-height:1.1;
+     font-weight:700;letter-spacing:-.035em}
+  .stats{margin:0 0 0 auto;font-size:13px;color:var(--ink-2);white-space:nowrap}
+  .stats b{color:var(--accent);font-weight:600;font-variant-numeric:tabular-nums;font-size:15px}
 
-  .cabinet{max-width:1120px;margin:0 auto;padding:32px 16px 64px}
+  .controls{display:flex;gap:14px;align-items:center;flex-wrap:wrap;margin-top:24px}
 
-  /* ---------- 顶部招牌 ---------- */
-  .marquee{
-    border:var(--u) solid var(--edge);
-    background:var(--panel);
-    padding:24px;
-    margin-bottom:24px;
-    display:flex;flex-wrap:wrap;gap:24px;align-items:flex-end;
-    box-shadow:8px 8px 0 rgba(0,0,0,.5);
+  .chips{display:flex;gap:6px;flex-wrap:wrap;margin-right:auto}
+  .chip{
+    font:inherit;font-size:13px;line-height:1;cursor:pointer;
+    border:1px solid var(--line);background:transparent;color:var(--ink-2);
+    border-radius:999px;padding:7px 13px;white-space:nowrap;
+    transition:border-color .12s,color .12s,background .12s;
   }
-  .marquee h1{
-    margin:0;
-    font-size:48px;
-    line-height:1.1;
-    letter-spacing:2px;
-    color:var(--ink);
-    text-shadow:4px 4px 0 var(--hang);   /* 硬偏移，街机 logo 的做法 */
+  .chip:hover{border-color:var(--ink-3);color:var(--ink)}
+  .chip[aria-pressed="true"]{
+    background:var(--accent-weak);border-color:transparent;color:var(--accent);font-weight:600;
   }
-  .tagline{margin:12px 0 0;color:var(--ink-dim);font-size:12px;line-height:1.6}
+  .chip .c{font-variant-numeric:tabular-nums;opacity:.7;margin-left:5px}
 
-  .score{display:flex;gap:12px;margin-left:auto}
-  .stat{
-    border:var(--u) solid var(--edge);
-    background:var(--well);
-    padding:8px 12px;
-    min-width:92px;
-    text-align:center;
+  .tools{display:flex;gap:8px}
+  input[type=search],input[type=text]{
+    font:inherit;font-size:14px;color:var(--ink);background:var(--raise);
+    border:1px solid var(--line);border-radius:8px;padding:8px 12px;width:150px;
+    transition:border-color .12s;
   }
-  .stat .k{display:block;color:var(--ink-dim);font-size:12px}
-  .stat .v{display:block;font-size:36px;line-height:1.2;font-variant-numeric:tabular-nums}
-  .stat.hi .v{color:var(--hang-ink)}
+  input:hover{border-color:var(--ink-3)}
+  ::placeholder{color:var(--ink-3)}
 
-  /* ---------- 机台主体：井 + 侧栏 ---------- */
-  .deck{display:grid;grid-template-columns:1fr 232px;gap:24px;align-items:start}
-
-  .well{
-    border:var(--u) solid var(--edge);
-    background-color:var(--well);
-    background-image:
-      linear-gradient(to right,var(--grid) 1px,transparent 1px),
-      linear-gradient(to bottom,var(--grid) 1px,transparent 1px);
-    background-size:var(--cell) var(--cell);
-    box-shadow:8px 8px 0 rgba(0,0,0,.5);
+  button.go{
+    font:inherit;font-size:14px;font-weight:600;cursor:pointer;
+    background:var(--accent);color:var(--accent-on);border:0;border-radius:8px;
+    padding:9px 18px;transition:opacity .12s;
   }
+  button.go:hover{opacity:.85}
+  button.plain{
+    font:inherit;font-size:14px;cursor:pointer;
+    background:transparent;color:var(--ink-2);border:1px solid var(--line);
+    border-radius:8px;padding:8px 14px;transition:border-color .12s,color .12s;
+  }
+  button.plain:hover{border-color:var(--ink-3);color:var(--ink)}
+  :focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 
+  /* ---------- 档位 ---------- */
+  .tier{margin-bottom:clamp(26px,3.6vw,40px)}
+  .tier-head{display:flex;align-items:baseline;gap:14px;padding-bottom:10px}
+  .tier-head h2{margin:0;line-height:1;letter-spacing:-.04em}
+  .tier-head .n{font-size:13px;color:var(--ink-3);font-variant-numeric:tabular-nums}
+  .tier-head .blurb{margin-left:auto;font-size:12.5px;color:var(--ink-3)}
+
+  /* 排名 = 字号 + 墨色，往下逐级泄气 */
+  .t1 h2{font-size:clamp(34px,5.6vw,54px);font-weight:700;color:var(--r1)}
+  .t2 h2{font-size:clamp(29px,4.7vw,45px);font-weight:700;color:var(--r2)}
+  .t3 h2{font-size:clamp(25px,4vw,38px);font-weight:600;color:var(--r3)}
+  .t4 h2{font-size:clamp(22px,3.4vw,32px);font-weight:600;color:var(--r4)}
+  .t5 h2{font-size:clamp(20px,3vw,27px);font-weight:500;color:var(--r5)}
+
+  /* 只有名称和国家两列，所以条目走双栏流式，不横跨整页 */
+  .rows{
+    list-style:none;margin:0;padding:0;
+    border-top:1px solid var(--line);
+    display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));
+    column-gap:36px;
+  }
   .row{
-    display:grid;
-    grid-template-columns:160px 1fr;
-    gap:16px;
-    padding:12px 16px;
-    border-bottom:1px solid var(--grid);
-    position:relative;
+    font:inherit;text-align:left;cursor:pointer;width:100%;
+    background:transparent;border:0;border-bottom:1px solid var(--line-soft);
+    display:flex;align-items:baseline;gap:14px;
+    padding:12px 8px;transition:background .1s;
   }
-  .row:last-child{border-bottom:0}
+  .row:hover{background:var(--hover)}
+  .nm{font-size:17px;font-weight:500;color:var(--ink);letter-spacing:-.01em;
+      overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .cy{margin-left:auto;font-size:13px;color:var(--ink-3);white-space:nowrap}
+  .none{grid-column:1/-1;padding:12px 8px;font-size:13.5px;color:var(--ink-3);
+        border-bottom:1px solid var(--line-soft);margin:0}
 
-  /* 行闪一下白：消行的那一下 */
-  .row.cleared::after{
-    content:"";position:absolute;inset:0;background:#fff;pointer-events:none;
-    opacity:0;                       /* 静止态，动画播完回到这里 */
-    animation:flash .26s steps(2) 2;
-  }
-  @keyframes flash{0%,100%{opacity:0}50%{opacity:.22}}
-
-  /* ---------- 档位标牌 ---------- */
-  .tag{display:flex;flex-direction:column;gap:4px}
-  .tag .head{display:flex;align-items:center;gap:8px}
-  .piece{display:grid;grid-template-columns:repeat(4,12px);grid-auto-rows:12px;gap:2px}
-  .piece i{display:block}
-  .piece i.on{
-    background:var(--c);
-    box-shadow:inset 2px 2px 0 rgba(255,255,255,.2), inset -2px -2px 0 rgba(0,0,0,.3);
-  }
-  .tag .name{font-size:24px;line-height:1;color:var(--c-ink)}
-  .tag .blurb{font-size:12px;color:var(--ink-dim);line-height:1.4}
-  .tag .n{font-size:12px;color:var(--ghost);font-variant-numeric:tabular-nums;line-height:1.4}
-
-  /* ---------- 方块（景点） ---------- */
-  .blocks{display:flex;flex-wrap:wrap;gap:4px;align-content:start}
-
-  .block{
-    display:block;
-    background:var(--c);
-    color:var(--on);
-    font-size:24px;
-    line-height:1.25;
-    padding:10px 12px;
-    border:0;
-    cursor:pointer;
-    text-align:left;
-    white-space:nowrap;
-    max-width:260px;
-    overflow:hidden;
-    text-overflow:ellipsis;
-    box-shadow:
-      inset 3px 3px 0 rgba(255,255,255,.18),
-      inset -3px -3px 0 rgba(0,0,0,.3),
-      3px 3px 0 rgba(0,0,0,.45);
-    position:relative;
-  }
-  .block:hover{filter:brightness(1.14)}
-  .block:active{
-    transform:translate(2px,2px);
-    box-shadow:
-      inset -3px -3px 0 rgba(255,255,255,.12),
-      inset 3px 3px 0 rgba(0,0,0,.32),
-      1px 1px 0 rgba(0,0,0,.45);
-  }
-  /* 写了一句话的，角上点一个点 */
-  .block.noted{padding-right:24px}
-  .block.noted::after{
-    content:"";position:absolute;top:9px;right:9px;
-    width:6px;height:6px;background:var(--on);opacity:.6;
-  }
-
-  .block.drop{animation:drop .4s steps(8)}   /* 分步下落，不是平滑缓动 */
-  @keyframes drop{from{transform:translateY(-200px)}to{transform:translateY(0)}}
-
-  .gap{
-    width:100%;
-    color:var(--ghost);
-    font-size:12px;
-    margin:0;
-    align-self:center;
-  }
-
-  /* ---------- 侧栏 HUD ---------- */
-  .hud{display:flex;flex-direction:column;gap:16px}
-  .box{
-    border:var(--u) solid var(--edge);
-    background:var(--panel);
-    padding:16px;
-    box-shadow:8px 8px 0 rgba(0,0,0,.5);
-  }
-  .box h2{margin:0 0 12px;font-size:12px;color:var(--ink-dim);line-height:1}
-
-  /* 凸起的按钮 / 凹陷的输入框 —— 街机机箱的做法 */
-  button.key{
-    font:inherit;font-size:12px;cursor:pointer;width:100%;
-    background:var(--edge);color:var(--ink);border:0;padding:12px;
-    box-shadow:inset 4px 4px 0 rgba(255,255,255,.14), inset -4px -4px 0 rgba(0,0,0,.4);
-  }
-  button.key:hover{background:#4D4942}
-  button.key:active{
-    transform:translate(2px,2px);
-    box-shadow:inset -4px -4px 0 rgba(255,255,255,.14), inset 4px 4px 0 rgba(0,0,0,.45);
-  }
-  button.key.go{background:var(--hang);color:var(--hang-on);font-size:24px;padding:16px 12px}
-  button.key.go:hover{background:#C9533F}
-  .pair{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-
-  input[type=search],input[type=text],textarea{
-    font:inherit;font-size:12px;width:100%;
-    background:var(--void);color:var(--ink);border:0;padding:10px;
-    box-shadow:inset 4px 4px 0 rgba(0,0,0,.6), inset -2px -2px 0 rgba(255,255,255,.1);
-  }
-  textarea{resize:vertical;min-height:72px;line-height:1.7}
-  ::placeholder{color:#6E6558}
-
-  :focus-visible{outline:var(--u) solid var(--focus);outline-offset:2px}
-
-  .note{color:var(--ink-dim);font-size:12px;line-height:1.7}
-  .alert{color:var(--focus);font-size:12px;line-height:1.7;margin:12px 0 0}
+  /* ---------- 页脚 ---------- */
+  footer{margin-top:clamp(40px,6vw,64px);padding-top:20px;border-top:1px solid var(--line);
+    display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+  footer .hint{font-size:12.5px;color:var(--ink-3);margin-right:auto;max-width:44ch;line-height:1.6}
+  .warn{font-size:12.5px;color:var(--accent);margin:14px 0 0}
 
   /* ---------- 弹窗 ---------- */
   dialog{
-    border:var(--u) solid var(--edge);background:var(--panel);color:var(--ink);
-    padding:0;width:min(420px,92vw);box-shadow:12px 12px 0 rgba(0,0,0,.55);
+    border:0;border-radius:14px;background:var(--raise);color:var(--ink);padding:0;
+    width:min(380px,92vw);box-shadow:0 1px 2px rgba(0,0,0,.08),0 24px 48px -16px rgba(0,0,0,.28);
   }
-  dialog::backdrop{background:rgba(12,10,8,.86)}
-  .bar{background:var(--edge);padding:10px 16px;font-size:12px}
-  form{padding:16px;display:grid;gap:12px}
+  dialog::backdrop{background:rgba(0,0,0,.34)}
+  @media (prefers-color-scheme:dark){
+    dialog{box-shadow:0 0 0 1px var(--line),0 24px 48px -16px rgba(0,0,0,.7)}
+    dialog::backdrop{background:rgba(0,0,0,.6)}
+  }
+  .dlg-head{padding:20px 22px 0;font-size:17px;font-weight:600;letter-spacing:-.01em}
+  form{padding:16px 22px 20px;display:grid;gap:14px}
   .field{display:grid;gap:6px}
-  .field label{font-size:12px;color:var(--ink-dim)}
+  .field label{font-size:12.5px;color:var(--ink-2);font-weight:500}
+  .field input{width:100%}
 
-  .picker{display:grid;grid-template-columns:repeat(5,1fr);gap:4px}
+  .picker{display:grid;grid-template-columns:repeat(5,1fr);gap:5px}
   .picker span{position:relative;display:block}
   .picker input{position:absolute;opacity:0;width:0;height:0}
   .picker label{
-    display:block;text-align:center;font-size:12px;cursor:pointer;padding:10px 2px;
-    background:var(--void);color:var(--c-ink);opacity:.72;user-select:none;line-height:1.3;
+    display:block;text-align:center;font-size:12.5px;line-height:1.35;cursor:pointer;
+    padding:9px 2px;border:1px solid var(--line);border-radius:7px;color:var(--ink-2);
+    user-select:none;transition:border-color .12s,color .12s,background .12s;
   }
-  .picker label:hover{opacity:.8}
+  .picker label:hover{border-color:var(--ink-3)}
   .picker input:checked + label{
-    background:var(--c);color:var(--on);opacity:1;
-    box-shadow:inset 3px 3px 0 rgba(255,255,255,.18), inset -3px -3px 0 rgba(0,0,0,.3);
+    background:var(--accent);border-color:var(--accent);color:var(--accent-on);font-weight:600;
   }
-  .picker input:focus-visible + label{outline:var(--u) solid var(--focus);outline-offset:2px}
-  .acts{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:4px}
-  .acts.editing{grid-template-columns:auto 1fr 1fr}
-  button.key.danger{background:transparent;color:var(--hang-ink);box-shadow:inset 0 0 0 3px var(--hang)}
-  button.key.danger:hover{background:var(--hang);color:var(--hang-on)}
+  .picker input:focus-visible + label{outline:2px solid var(--accent);outline-offset:2px}
 
-  footer{margin-top:32px;color:var(--ghost);font-size:12px;line-height:1.8}
-  footer a{color:var(--ink-dim)}
+  .acts{display:flex;gap:8px;justify-content:flex-end;margin-top:4px}
+  .acts .kill{margin-right:auto;color:var(--danger);border-color:transparent}
+  .acts .kill:hover{border-color:var(--danger);color:var(--danger)}
 
-  @media (prefers-reduced-motion:reduce){
-    .block.drop{animation:none}
-    .row.cleared::after{animation:none}
-  }
-
-  @media (max-width:860px){
-    .deck{grid-template-columns:1fr}
-    .cabinet{padding:16px 12px 104px}     /* 给底部投放键让位 */
-    .marquee{padding:16px}
-    .stat .v{font-size:24px}
-    .box.next{
-      position:fixed;left:0;right:0;bottom:0;z-index:5;
-      border-left:0;border-right:0;border-bottom:0;box-shadow:0 -4px 0 rgba(0,0,0,.5);
-    }
-    .box.next h2{display:none}
-    .marquee h1{font-size:36px;text-shadow:3px 3px 0 var(--hang)}
-    .score{margin-left:0;width:100%}
-    .stat{flex:1;min-width:0}
-    .row{grid-template-columns:1fr;gap:12px}
-    .tag{flex-direction:row;align-items:center;gap:12px;flex-wrap:wrap}
-    .tag .blurb{display:none}
-    .tag .n{margin-left:auto}
+  @media (max-width:620px){
+    .rows{grid-template-columns:1fr;column-gap:0}
+    .tier-head .blurb{display:none}
+    .tools{width:100%}
+    input[type=search]{flex:1;width:auto}
     .picker{grid-template-columns:repeat(3,1fr)}
   }
 </style>
 </head>
 <body>
-<div class="cabinet">
+<div class="page">
 
-  <header class="marquee">
-    <div>
-      <h1>景点评级</h1>
-      <p class="tagline">我去过的地方，五档，从夯到拉完了。</p>
+  <header class="masthead">
+    <div class="title-row">
+      <h1>去过的地方</h1>
+      <p class="stats"><b id="n-spots">0</b> 处 · <b id="n-countries">0</b> 个国家</p>
     </div>
-    <div class="score">
-      <div class="stat"><span class="k">去过</span><span class="v" id="stat-total">000</span></div>
-      <div class="stat hi"><span class="k">夯</span><span class="v" id="stat-top">000</span></div>
+    <div class="controls">
+      <div class="chips" id="chips"></div>
+      <div class="tools">
+        <input type="search" id="find" placeholder="搜景点" aria-label="搜索景点">
+        <button class="go" id="add">添加</button>
+      </div>
     </div>
+    <p class="warn" id="warn" hidden>这个浏览器不让本地文件存数据，改动不会留下。用本地服务打开，或先导出备份。</p>
   </header>
 
-  <div class="deck">
-    <main class="well" id="well"></main>
-
-    <aside class="hud">
-      <section class="box next">
-        <h2>NEXT</h2>
-        <button class="key go" id="add">＋ 投一个</button>
-      </section>
-
-      <section class="box">
-        <h2>找景点</h2>
-        <input type="search" id="find" placeholder="名字或地方" aria-label="搜索景点">
-      </section>
-
-      <section class="box">
-        <h2>存档</h2>
-        <div class="pair">
-          <button class="key" id="save-out">导出</button>
-          <button class="key" id="save-in">导入</button>
-        </div>
-        <input type="file" id="file" accept="application/json,.json" hidden>
-        <p class="note" style="margin:12px 0 0">记录只存在这台设备的浏览器里。</p>
-        <p class="alert" id="warn" hidden>这个浏览器不让本地文件存数据，改动不会留下。用本地服务打开，或先导出。</p>
-      </section>
-    </aside>
-  </div>
+  <main id="list"></main>
 
   <footer>
-    <p>字体 <a href="https://github.com/SolidZORO/zpix-pixel-font" target="_blank" rel="noopener">Zpix 最像素</a>，个人项目免费授权。</p>
+    <p class="hint">记录存在这台设备的浏览器里，不上传。换设备或清缓存前记得导出。</p>
+    <button class="plain" id="out">导出</button>
+    <button class="plain" id="in">导入</button>
+    <input type="file" id="file" accept="application/json,.json" hidden>
   </footer>
 </div>
 
 <dialog id="dlg">
-  <div class="bar" id="dlg-bar">新方块</div>
+  <div class="dlg-head" id="dlg-head">添加景点</div>
   <form method="dialog" id="form">
     <div class="field">
-      <label for="f-name">叫什么</label>
-      <input type="text" id="f-name" required maxlength="40" placeholder="黄岩石窟">
+      <label for="f-name">名称</label>
+      <input type="text" id="f-name" required maxlength="48" placeholder="黄岩石窟" autocomplete="off">
     </div>
     <div class="field">
-      <label for="f-where">在哪</label>
-      <input type="text" id="f-where" maxlength="40" placeholder="浙江 台州">
+      <label for="f-country">国家</label>
+      <input type="text" id="f-country" maxlength="24" placeholder="中国" list="countries" autocomplete="off">
+      <datalist id="countries"></datalist>
     </div>
     <div class="field">
-      <label for="f-when">什么时候去的</label>
-      <input type="text" id="f-when" maxlength="20" placeholder="2025-09，不填也行">
-    </div>
-    <div class="field">
-      <label id="pick-label">几档</label>
+      <label id="pick-label">评级</label>
       <div class="picker" role="radiogroup" aria-labelledby="pick-label" id="picker"></div>
     </div>
-    <div class="field">
-      <label for="f-said">一句话</label>
-      <textarea id="f-said" maxlength="140" placeholder="不填也行"></textarea>
-    </div>
-    <div class="acts" id="acts">
-      <button type="button" class="key danger" id="kill" hidden>删掉</button>
-      <button type="button" class="key" id="drop-it">取消</button>
-      <button type="submit" class="key go" id="save" style="font-size:12px;padding:12px">放进去</button>
+    <div class="acts">
+      <button type="button" class="plain kill" id="kill" hidden>删除</button>
+      <button type="button" class="plain" id="cancel">取消</button>
+      <button type="submit" class="go" id="save">保存</button>
     </div>
   </form>
 </dialog>
@@ -370,29 +255,24 @@
 (function(){
   "use strict";
 
-  /* 五档，从高到低。每档配一个真实的四格骨牌：形状和颜色双重编码档位。 */
+  /* 五档，从高到低。排名由字号和墨色表达，不配颜色。 */
   var TIERS = [
-    { key:"hang", name:"夯",     blurb:"值得专程飞一趟", c:"var(--hang)", on:"var(--hang-on)", ink:"var(--hang-ink)",
-      shape:[1,1,1,1, 0,0,0,0] },                                   /* I */
-    { key:"top",  name:"顶级",   blurb:"路过必须进去",   c:"var(--top)", on:"var(--top-on)", ink:"var(--top-ink)",
-      shape:[0,1,0,0, 1,1,1,0] },                                   /* T */
-    { key:"ren",  name:"人上人", blurb:"去了不亏",       c:"var(--ren)", on:"var(--ren-on)", ink:"var(--ren-ink)",
-      shape:[0,0,1,0, 1,1,1,0] },                                   /* L */
-    { key:"npc",  name:"npc",    blurb:"有它没它一样",   c:"var(--npc)", on:"var(--npc-on)", ink:"var(--npc-ink)",
-      shape:[0,1,1,0, 1,1,0,0] },                                   /* S */
-    { key:"la",   name:"拉完了", blurb:"劝退",           c:"var(--la)", on:"var(--la-on)", ink:"var(--la-ink)",
-      shape:[1,1,0,0, 0,1,1,0] }                                    /* Z */
+    { key:"hang", name:"夯",     blurb:"值得专程飞一趟", cls:"t1" },
+    { key:"top",  name:"顶级",   blurb:"路过必须进去",   cls:"t2" },
+    { key:"ren",  name:"人上人", blurb:"去了不亏",       cls:"t3" },
+    { key:"npc",  name:"npc",    blurb:"有它没它一样",   cls:"t4" },
+    { key:"la",   name:"拉完了", blurb:"劝退",           cls:"t5" }
   ];
 
   var SEED = [
-    { id:"seed-huangyan", name:"黄岩石窟", where:"浙江 台州", when:"", tier:"top", said:"" }
+    { id:"seed-huangyan", name:"黄岩石窟", country:"中国", tier:"top" }
   ];
 
   var KEY = "scenic-tiers-v1";
   var store = { ok:true };
   var spots = load();
   var editingId = null;
-  var landedId = null;          /* 刚落下的方块，用来放一次动画 */
+  var country = "";          /* 当前国家筛选，空 = 全部 */
 
   function load(){
     try{
@@ -408,14 +288,14 @@
     return SEED.slice();
   }
 
-  /* v1 用的是 place/date/note，这里统一成 where/when/said */
+  /* 老版本有 place/where（地点）、date/when（时间）、note/said（一句话），现已全部取消。
+     读进来即丢弃；老记录没有国家，但凡有过地点的一律按中国处理，不对的改一下即可。 */
   function migrate(s){
+    var hadPlace = !!(s.where || s.place);
     return {
       id: s.id || uid(),
-      name: String(s.name || "没名字"),
-      where: String(s.where || s.place || ""),
-      when: String(s.when || s.date || ""),
-      said: String(s.said || s.note || ""),
+      name: String(s.name || "未命名"),
+      country: String(s.country || (hadPlace ? "中国" : "")),
       tier: isTier(s.tier) ? s.tier : "npc"
     };
   }
@@ -430,99 +310,98 @@
     }
   }
 
-  function isTier(key){
-    for(var i=0;i<TIERS.length;i++) if(TIERS[i].key===key) return true;
+  function isTier(k){
+    for(var i=0;i<TIERS.length;i++) if(TIERS[i].key===k) return true;
     return false;
   }
-
   function uid(){
     return "s-" + Date.now().toString(36) + "-" + Math.random().toString(36).slice(2,7);
   }
-
   function esc(s){
     return String(s==null?"":s).replace(/[&<>"']/g, function(c){
       return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];
     });
   }
 
-  function pad3(n){ return ("00" + n).slice(-3); }
-
-  function pieceHtml(t){
-    return '<div class="piece" aria-hidden="true">' +
-      t.shape.map(function(on){ return '<i class="' + (on ? "on" : "") + '"></i>'; }).join("") +
-    '</div>';
+  function countries(){
+    var seen = {}, out = [];
+    spots.forEach(function(s){
+      var c = s.country || "未填";
+      if(!seen[c]){ seen[c] = 0; out.push(c); }
+      seen[c]++;
+    });
+    out.sort(function(a,b){ return seen[b] - seen[a] || a.localeCompare(b,"zh"); });
+    return out.map(function(c){ return { name:c, n:seen[c] }; });
   }
 
-  /* ---------- 画井 ---------- */
-  var well = document.getElementById("well");
-  var find = document.getElementById("find");
+  /* ---------- 渲染 ---------- */
+  var list  = document.getElementById("list");
+  var find  = document.getElementById("find");
+  var chips = document.getElementById("chips");
+
+  function visible(){
+    var q = find.value.trim().toLowerCase();
+    return spots.filter(function(s){
+      if(country && (s.country || "未填") !== country) return false;
+      if(!q) return true;
+      return (s.name + " " + s.country).toLowerCase().indexOf(q) > -1;
+    });
+  }
 
   function render(){
-    var q = find.value.trim().toLowerCase();
-    var shown = spots.filter(function(s){
-      if(!q) return true;
-      return (s.name + " " + s.where + " " + s.said).toLowerCase().indexOf(q) > -1;
-    });
+    var shown = visible();
+    var filtering = !!country || !!find.value.trim();
 
-    well.innerHTML = TIERS.map(function(t){
+    list.innerHTML = TIERS.map(function(t){
       var mine = shown.filter(function(s){ return s.tier === t.key; });
-      var all  = spots.filter(function(s){ return s.tier === t.key; }).length;
-
-      var blocks = mine.length
+      var rows = mine.length
         ? mine.map(function(s){
-            /* 详情收进 title 和弹窗，方块本身只留名字 */
-            var detail = [s.name, [s.where, s.when].filter(Boolean).join("　"), s.said]
-                           .filter(Boolean).join("\n");
-            return '<button type="button" class="block' +
-                (s.id === landedId ? " drop" : "") + (s.said ? " noted" : "") + '"' +
-              ' data-open="' + s.id + '"' +
-              ' title="' + esc(detail) + '"' +
-              ' aria-label="' + esc(s.name + "，" + t.name + "档，打开详情") + '">' +
-              esc(s.name) +
-            '</button>';
+            return '<li><button type="button" class="row" data-open="' + s.id + '"' +
+              ' aria-label="' + esc(s.name + "，" + t.name + "，打开详情") + '">' +
+              '<span class="nm">' + esc(s.name) + '</span>' +
+              '<span class="cy">' + esc(s.country || "—") + '</span>' +
+            '</button></li>';
           }).join("")
-        : '<p class="gap">' + (q ? "这行没有匹配的" : "空行") + '</p>';
+        : '<li class="none">' + (filtering ? "没有匹配的" : "还没有") + '</li>';
 
-      return '<section class="row' + (t.key === landedTier() ? " cleared" : "") + '"' +
-             ' style="--c:' + t.c + ';--on:' + t.on + ';--c-ink:' + t.ink + '" aria-labelledby="h-' + t.key + '">' +
-        '<div class="tag">' +
-          '<div class="head">' + pieceHtml(t) +
-            '<div class="name" id="h-' + t.key + '">' + esc(t.name) + '</div>' +
-          '</div>' +
-          '<div class="blurb">' + esc(t.blurb) + '</div>' +
-          '<div class="n">' + all + ' 个</div>' +
+      return '<section class="tier ' + t.cls + '">' +
+        '<div class="tier-head">' +
+          '<h2>' + esc(t.name) + '</h2>' +
+          '<span class="n">' + mine.length + '</span>' +
+          '<span class="blurb">' + esc(t.blurb) + '</span>' +
         '</div>' +
-        '<div class="blocks">' + blocks + '</div>' +
+        '<ul class="rows">' + rows + '</ul>' +
       '</section>';
     }).join("");
 
-    document.getElementById("stat-total").textContent = pad3(spots.length);
-    document.getElementById("stat-top").textContent =
-      pad3(spots.filter(function(s){ return s.tier === "hang"; }).length);
+    var cs = countries();
+    chips.innerHTML = '<button class="chip" data-country="" aria-pressed="' + (!country) + '">全部' +
+        '<span class="c">' + spots.length + '</span></button>' +
+      cs.map(function(c){
+        return '<button class="chip" data-country="' + esc(c.name) + '"' +
+          ' aria-pressed="' + (country === c.name) + '">' + esc(c.name) +
+          '<span class="c">' + c.n + '</span></button>';
+      }).join("");
 
-    landedId = null;
-  }
+    document.getElementById("n-spots").textContent = spots.length;
+    document.getElementById("n-countries").textContent =
+      cs.filter(function(c){ return c.name !== "未填"; }).length;
 
-  function landedTier(){
-    if(!landedId) return null;
-    var s = spots.filter(function(x){ return x.id === landedId; })[0];
-    return s ? s.tier : null;
+    document.getElementById("countries").innerHTML =
+      cs.filter(function(c){ return c.name !== "未填"; })
+        .map(function(c){ return '<option value="' + esc(c.name) + '">'; }).join("");
   }
 
   /* ---------- 弹窗 ---------- */
-  var dlg = document.getElementById("dlg");
+  var dlg  = document.getElementById("dlg");
   var form = document.getElementById("form");
   // form.name 会被 HTMLFormElement 自身的 name 属性遮蔽，一律按 id 取
-  var fName  = document.getElementById("f-name");
-  var fWhere = document.getElementById("f-where");
-  var fWhen  = document.getElementById("f-when");
-  var fSaid  = document.getElementById("f-said");
-  var acts   = document.getElementById("acts");
-  var killBtn= document.getElementById("kill");
-  var saveBtn= document.getElementById("save");
+  var fName    = document.getElementById("f-name");
+  var fCountry = document.getElementById("f-country");
+  var killBtn  = document.getElementById("kill");
 
   document.getElementById("picker").innerHTML = TIERS.map(function(t,i){
-    return '<span style="--c:' + t.c + ';--on:' + t.on + ';--c-ink:' + t.ink + '">' +
+    return '<span>' +
       '<input type="radio" name="tier" id="p-' + t.key + '" value="' + t.key + '"' + (i===1?" checked":"") + '>' +
       '<label for="p-' + t.key + '">' + esc(t.name) + '</label>' +
     '</span>';
@@ -530,85 +409,87 @@
 
   function open(spot){
     editingId = spot ? spot.id : null;
-    document.getElementById("dlg-bar").textContent = spot ? spot.name : "新方块";
-    saveBtn.textContent = spot ? "存下来" : "放进去";
-    killBtn.hidden = !spot;
-    acts.classList.toggle("editing", !!spot);
-    fName.value  = spot ? spot.name  : "";
-    fWhere.value = spot ? spot.where : "";
-    fWhen.value  = spot ? spot.when  : "";
-    fSaid.value  = spot ? spot.said  : "";
+    document.getElementById("dlg-head").textContent = spot ? spot.name : "添加景点";
+    fName.value    = spot ? spot.name    : "";
+    fCountry.value = spot ? spot.country : "";
     var r = form.querySelector('input[name=tier][value="' + (spot ? spot.tier : "top") + '"]');
     if(r) r.checked = true;
+    killBtn.hidden = !spot;
     dlg.showModal();
     fName.focus();
   }
 
   form.addEventListener("submit", function(){
     var data = {
-      name:  fName.value.trim(),
-      where: fWhere.value.trim(),
-      when:  fWhen.value.trim(),
-      said:  fSaid.value.trim(),
-      tier:  (form.querySelector("input[name=tier]:checked")||{}).value || "npc"
+      name:    fName.value.trim(),
+      country: fCountry.value.trim(),
+      tier:    (form.querySelector("input[name=tier]:checked")||{}).value || "npc"
     };
     if(!data.name) return;
 
     if(editingId){
-      landedId = editingId;
       spots = spots.map(function(s){
         return s.id === editingId ? Object.assign({}, s, data) : s;
       });
     }else{
       data.id = uid();
-      landedId = data.id;
       spots.push(data);
     }
     editingId = null;
+    dropStaleFilter();
     save();
     render();
   });
 
-  document.getElementById("drop-it").addEventListener("click", function(){
-    editingId = null;
-    dlg.close();
-  });
-
-  document.getElementById("add").addEventListener("click", function(){ open(null); });
-
-  well.addEventListener("click", function(e){
-    var tile = e.target.closest("[data-open]");
-    if(!tile) return;
-    var hit = spots.filter(function(s){ return s.id === tile.getAttribute("data-open"); })[0];
-    if(hit) open(hit);
-  });
+  /* 筛选中的国家可能因为这次编辑/删除而不存在了，顺手清掉，免得页面空白 */
+  function dropStaleFilter(){
+    if(country && !spots.some(function(s){ return (s.country||"未填") === country; })) country = "";
+  }
 
   killBtn.addEventListener("click", function(){
     var gone = spots.filter(function(s){ return s.id === editingId; })[0];
-    if(!gone) return;
-    if(!confirm("把「" + gone.name + "」清掉？")) return;
+    if(!gone || !confirm("删除「" + gone.name + "」？")) return;
     spots = spots.filter(function(s){ return s.id !== editingId; });
     editingId = null;
+    dropStaleFilter();
     save();
     render();
     dlg.close();
+  });
+
+  document.getElementById("cancel").addEventListener("click", function(){
+    editingId = null;
+    dlg.close();
+  });
+  document.getElementById("add").addEventListener("click", function(){ open(null); });
+
+  list.addEventListener("click", function(e){
+    var row = e.target.closest("[data-open]");
+    if(!row) return;
+    var hit = spots.filter(function(s){ return s.id === row.getAttribute("data-open"); })[0];
+    if(hit) open(hit);
+  });
+
+  chips.addEventListener("click", function(e){
+    var chip = e.target.closest("[data-country]");
+    if(!chip) return;
+    country = chip.getAttribute("data-country");
+    render();
   });
 
   find.addEventListener("input", render);
 
-  /* ---------- 存档 ---------- */
-  document.getElementById("save-out").addEventListener("click", function(){
+  /* ---------- 导入导出 ---------- */
+  document.getElementById("out").addEventListener("click", function(){
     var blob = new Blob([JSON.stringify(spots, null, 2)], {type:"application/json"});
     var url = URL.createObjectURL(blob);
     var a = document.createElement("a");
-    a.href = url;
-    a.download = "景点评级.json";
-    a.click();
+    a.href = url; a.download = "去过的地方.json"; a.click();
     URL.revokeObjectURL(url);
   });
 
   var file = document.getElementById("file");
-  document.getElementById("save-in").addEventListener("click", function(){ file.click(); });
+  document.getElementById("in").addEventListener("click", function(){ file.click(); });
   file.addEventListener("change", function(){
     var f = file.files[0];
     if(!f) return;
@@ -616,8 +497,9 @@
     reader.onload = function(){
       try{
         var data = JSON.parse(reader.result);
-        if(!Array.isArray(data)) throw new Error("这个文件不是存档");
+        if(!Array.isArray(data)) throw new Error("这个文件不是备份");
         spots = data.map(migrate);
+        country = "";
         save();
         render();
       }catch(err){
