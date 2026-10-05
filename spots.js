@@ -32,5 +32,11 @@ window.SPOTS = [
   { "name": "Kings Canyon National Park"   , "city": "California"  , "season": ""        , "country": "美国"  , "tier": "hang" },
   { "name": "Arches National Park"         , "city": "Utah"        , "season": ""        , "country": "美国"  , "tier": "hang" },
   { "name": "Niagara Falls"                , "city": "New York"    , "season": ""        , "country": "美国"  , "tier": "hang" },
-  { "name": "Sequoia National Park"        , "city": "California"  , "season": ""        , "country": "美国"  , "tier": "top" }
+  { "name": "Sequoia National Park"        , "city": "California"  , "season": ""        , "country": "美国"  , "tier": "top" },
+  { "name": "Acadia National Park"         , "city": "Maine"       , "season": ""        , "country": "美国"  , "tier": "hang" },
+  { "name": "Bryce Canyon National Park"   , "city": "Utah"        , "season": ""        , "country": "美国"  , "tier": "hang" },
+  { "name": "Grand Teton National Park"    , "city": "Wyoming"     , "season": ""        , "country": "美国"  , "tier": "hang" },
+  { "name": "Monument Valley"              , "city": "Arizona"     , "season": ""        , "country": "美国"  , "tier": "hang" },
+  { "name": "Pinnacles National Park"      , "city": "California"  , "season": ""        , "country": "美国"  , "tier": "ren" },
+  { "name": "函馆山"                       , "city": "函馆"        , "season": ""        , "country": "日本"  , "tier": "top" }
 ];
