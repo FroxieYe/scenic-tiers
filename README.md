@@ -10,6 +10,8 @@
 
 每条记录三个字段：**名称**、**城市**和**国家**。
 
+英语国家的景点用英文原名（Lake Tekapo / Point Reyes National Seashore），中国和日本的用中文。
+
 ## 版式
 
 照着 Figma Community 的
