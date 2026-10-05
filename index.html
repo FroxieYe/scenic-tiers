@@ -101,16 +101,20 @@
   .lane{background:var(--lane);display:flex;flex-wrap:wrap;gap:6px;padding:7px;
         align-content:flex-start;min-height:106px}
   .tile{
-    width:92px;height:92px;background:var(--tile);border:0;border-radius:4px;cursor:pointer;
-    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:7px;
+    width:100px;height:100px;background:var(--tile);border:0;border-radius:4px;cursor:pointer;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;
     padding:7px 5px;transition:background .12s;
   }
   .tile:hover{background:var(--tile-h)}
-  .tile .flag{width:30px;height:30px;border-radius:50%;flex:none;background:var(--tile-h)}
+  .tile .flag{width:28px;height:28px;border-radius:50%;flex:none;background:var(--tile-h)}
   .tile .nm{
     font-size:11.5px;line-height:1.25;color:var(--ink);text-align:center;font-weight:500;
     display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;
     word-break:break-all;width:100%;
+  }
+  .tile .ct{
+    font-size:10px;line-height:1.2;color:var(--ink-3);text-align:center;width:100%;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
   }
   .ph{display:grid;place-items:center;font-size:13px;font-weight:700;color:var(--ink-3)}
   .empty{align-self:center;font-size:12px;color:#454545;padding-left:6px}
@@ -165,7 +169,7 @@
     .label .nm{font-size:19px}
     .label .blurb{display:none}
     .lane{min-height:96px;gap:5px;padding:5px}
-    .tile{width:80px;height:80px}
+    .tile{width:88px;height:92px}
     .picker{grid-template-columns:repeat(3,1fr)}
   }
   @media (prefers-reduced-motion:reduce){*{transition:none!important}}
@@ -179,7 +183,7 @@
     <p class="counts"><b id="n-spots">0</b> 处 · <b id="n-countries">0</b> 个国家</p>
     <div class="wall" id="wall" role="group" aria-label="按国家筛选"></div>
     <div class="bar">
-      <input type="search" id="find" placeholder="搜景点或国家" aria-label="搜索">
+      <input type="search" id="find" placeholder="搜景点、城市或国家" aria-label="搜索">
       <button class="btn primary" id="add">添加</button>
     </div>
     <div class="draft" id="draft" hidden>
@@ -209,6 +213,10 @@
     <div class="field">
       <label for="f-name">名称</label>
       <input type="text" id="f-name" required maxlength="48" placeholder="黄岩石窟" autocomplete="off">
+    </div>
+    <div class="field">
+      <label for="f-city">城市</label>
+      <input type="text" id="f-city" maxlength="24" placeholder="台州" autocomplete="off">
     </div>
     <div class="field">
       <label for="f-country">国家</label>
@@ -283,7 +291,7 @@
   var pick = "";
 
   function hashOf(list){
-    var str = JSON.stringify(list.map(function(x){ return [x.name, x.country, x.tier]; }));
+    var str = JSON.stringify(list.map(function(x){ return [x.name, x.city, x.country, x.tier]; }));
     var h = 5381;
     for(var i=0;i<str.length;i++){ h = ((h<<5) + h + str.charCodeAt(i)) | 0; }
     return String(h);
@@ -313,11 +321,13 @@
   /* 老版本有 place/where（地点）、date/when（时间）、note/said（一句话），已全部取消，读进来即丢弃。
      老记录没有国家，但凡有过地点的一律按中国处理，不对的点开改一下。 */
   function migrate(s){
-    var hadPlace = !!(s.where || s.place);
+    var legacy = String(s.where || s.place || "").trim();   /* 老字段形如「浙江 台州」 */
+    var parts = legacy ? legacy.split(/[\s　]+/) : [];
     return {
       id: s.id || ("p" + (++seq) + "-" + Math.random().toString(36).slice(2,6)),
       name: String(s.name || "未命名"),
-      country: String(s.country || (hadPlace ? "中国" : "")),
+      city: String(s.city || (parts.length ? parts[parts.length - 1] : "")),
+      country: String(s.country || (legacy ? "中国" : "")),
       tier: isTier(s.tier) ? s.tier : "npc"
     };
   }
@@ -335,7 +345,7 @@
 
   function bare(list){
     return list.map(function(s){
-      return { name:s.name, country:s.country, tier:s.tier };
+      return { name:s.name, city:s.city, country:s.country, tier:s.tier };
     });
   }
 
@@ -347,6 +357,7 @@
            "window.SPOTS = [\n" +
            list.map(function(s){
              return '  { "name": ' + JSON.stringify(s.name) +
+                    ', "city": ' + JSON.stringify(s.city) +
                     ', "country": ' + JSON.stringify(s.country) +
                     ', "tier": ' + JSON.stringify(s.tier) + ' }';
            }).join(",\n") + "\n];\n";
@@ -402,7 +413,7 @@
     return spots.filter(function(s){
       if(pick && (s.country || "未填") !== pick) return false;
       if(!q) return true;
-      return (s.name + " " + s.country).toLowerCase().indexOf(q) > -1;
+      return (s.name + " " + s.city + " " + s.country).toLowerCase().indexOf(q) > -1;
     });
   }
 
@@ -415,10 +426,12 @@
       var tiles = mine.length
         ? mine.map(function(s){
             return '<button type="button" class="tile" data-open="' + s.id + '"' +
-              ' title="' + esc(s.name + (s.country ? "　" + s.country : "")) + '"' +
-              ' aria-label="' + esc(s.name + "，" + (s.country||"未填") + "，" + t.name + "，打开详情") + '">' +
-              flagHtml(s.country, "flag", 30) +
+              ' title="' + esc([s.name, s.city, s.country].filter(Boolean).join("　")) + '"' +
+              ' aria-label="' + esc(s.name + "，" +
+                  [s.city, s.country].filter(Boolean).join(" ") + "，" + t.name + "，打开详情") + '">' +
+              flagHtml(s.country, "flag", 28) +
               '<span class="nm">' + esc(s.name) + '</span>' +
+              '<span class="ct">' + esc(s.city || "—") + '</span>' +
             '</button>';
           }).join("")
         : '<p class="empty">' + (filtering ? "没有匹配的" : "还没有") + '</p>';
@@ -482,6 +495,7 @@
   var form = document.getElementById("form");
   // form.name 会被 HTMLFormElement 自身的 name 属性遮蔽，一律按 id 取
   var fName    = document.getElementById("f-name");
+  var fCity    = document.getElementById("f-city");
   var fCountry = document.getElementById("f-country");
   var killBtn  = document.getElementById("kill");
   var dlgFlag  = document.getElementById("dlg-flag");
@@ -505,6 +519,7 @@
     editingId = spot ? spot.id : null;
     document.getElementById("dlg-title").textContent = spot ? spot.name : "添加景点";
     fName.value    = spot ? spot.name    : "";
+    fCity.value    = spot ? spot.city    : "";
     fCountry.value = spot ? spot.country : "";
     var r = form.querySelector('input[name=tier][value="' + (spot ? spot.tier : "top") + '"]');
     if(r) r.checked = true;
@@ -517,6 +532,7 @@
   form.addEventListener("submit", function(){
     var data = {
       name:    fName.value.trim(),
+      city:    fCity.value.trim(),
       country: fCountry.value.trim(),
       tier:    (form.querySelector("input[name=tier]:checked")||{}).value || "npc"
     };
