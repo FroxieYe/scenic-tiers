@@ -116,6 +116,7 @@
     font-size:10px;line-height:1.2;color:var(--ink-3);text-align:center;width:100%;
     white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
   }
+  .tile .ct i{font-style:normal;margin-left:5px;opacity:.72}
   .ph{display:grid;place-items:center;font-size:13px;font-weight:700;color:var(--ink-3)}
   .empty{align-self:center;font-size:12px;color:#454545;padding-left:6px}
 
@@ -183,7 +184,7 @@
     <p class="counts"><b id="n-spots">0</b> 处 · <b id="n-countries">0</b> 个国家</p>
     <div class="wall" id="wall" role="group" aria-label="按国家筛选"></div>
     <div class="bar">
-      <input type="search" id="find" placeholder="搜景点、城市或国家" aria-label="搜索">
+      <input type="search" id="find" placeholder="搜景点、城市、季节或国家" aria-label="搜索">
       <button class="btn primary" id="add">添加</button>
     </div>
     <div class="draft" id="draft" hidden>
@@ -217,6 +218,10 @@
     <div class="field">
       <label for="f-city">城市</label>
       <input type="text" id="f-city" maxlength="24" placeholder="台州" autocomplete="off">
+    </div>
+    <div class="field">
+      <label for="f-season">季节</label>
+      <input type="text" id="f-season" maxlength="16" placeholder="秋天，可留空" autocomplete="off">
     </div>
     <div class="field">
       <label for="f-country">国家</label>
@@ -291,7 +296,8 @@
   var pick = "";
 
   function hashOf(list){
-    var str = JSON.stringify(list.map(function(x){ return [x.name, x.city, x.country, x.tier]; }));
+    var str = JSON.stringify(list.map(function(x){
+      return [x.name, x.city, x.season, x.country, x.tier]; }));
     var h = 5381;
     for(var i=0;i<str.length;i++){ h = ((h<<5) + h + str.charCodeAt(i)) | 0; }
     return String(h);
@@ -323,10 +329,17 @@
   function migrate(s){
     var legacy = String(s.where || s.place || "").trim();   /* 老字段形如「浙江 台州」 */
     var parts = legacy ? legacy.split(/[\s　]+/) : [];
+    var name = String(s.name || "未命名");
+    var season = String(s.season || "");
+    if(!season){                       /* 老数据把季节写在名字末尾的括号里 */
+      var m = name.match(/^(.*?)（([^（）]+)）$/);
+      if(m){ name = m[1]; season = m[2]; }
+    }
     return {
       id: s.id || ("p" + (++seq) + "-" + Math.random().toString(36).slice(2,6)),
-      name: String(s.name || "未命名"),
+      name: name,
       city: String(s.city || (parts.length ? parts[parts.length - 1] : "")),
+      season: season,
       country: String(s.country || (legacy ? "中国" : "")),
       tier: isTier(s.tier) ? s.tier : "npc"
     };
@@ -345,7 +358,7 @@
 
   function bare(list){
     return list.map(function(s){
-      return { name:s.name, city:s.city, country:s.country, tier:s.tier };
+      return { name:s.name, city:s.city, season:s.season, country:s.country, tier:s.tier };
     });
   }
 
@@ -358,6 +371,7 @@
            list.map(function(s){
              return '  { "name": ' + JSON.stringify(s.name) +
                     ', "city": ' + JSON.stringify(s.city) +
+                    ', "season": ' + JSON.stringify(s.season) +
                     ', "country": ' + JSON.stringify(s.country) +
                     ', "tier": ' + JSON.stringify(s.tier) + ' }';
            }).join(",\n") + "\n];\n";
@@ -413,7 +427,8 @@
     return spots.filter(function(s){
       if(pick && (s.country || "未填") !== pick) return false;
       if(!q) return true;
-      return (s.name + " " + s.city + " " + s.country).toLowerCase().indexOf(q) > -1;
+      return (s.name + " " + s.city + " " + s.season + " " + s.country)
+               .toLowerCase().indexOf(q) > -1;
     });
   }
 
@@ -426,12 +441,14 @@
       var tiles = mine.length
         ? mine.map(function(s){
             return '<button type="button" class="tile" data-open="' + s.id + '"' +
-              ' title="' + esc([s.name, s.city, s.country].filter(Boolean).join("　")) + '"' +
+              ' title="' + esc([s.name, s.city, s.season, s.country].filter(Boolean).join("　")) + '"' +
               ' aria-label="' + esc(s.name + "，" +
-                  [s.city, s.country].filter(Boolean).join(" ") + "，" + t.name + "，打开详情") + '">' +
+                  [s.city, s.season, s.country].filter(Boolean).join(" ") + "，" + t.name + "，打开详情") + '">' +
               flagHtml(s.country, "flag", 28) +
               '<span class="nm">' + esc(s.name) + '</span>' +
-              '<span class="ct">' + esc(s.city || "—") + '</span>' +
+              '<span class="ct">' + esc(s.city || "—") +
+                (s.season ? '<i>' + esc(s.season) + '</i>' : '') +
+              '</span>' +
             '</button>';
           }).join("")
         : '<p class="empty">' + (filtering ? "没有匹配的" : "还没有") + '</p>';
@@ -496,6 +513,7 @@
   // form.name 会被 HTMLFormElement 自身的 name 属性遮蔽，一律按 id 取
   var fName    = document.getElementById("f-name");
   var fCity    = document.getElementById("f-city");
+  var fSeason  = document.getElementById("f-season");
   var fCountry = document.getElementById("f-country");
   var killBtn  = document.getElementById("kill");
   var dlgFlag  = document.getElementById("dlg-flag");
@@ -520,6 +538,7 @@
     document.getElementById("dlg-title").textContent = spot ? spot.name : "添加景点";
     fName.value    = spot ? spot.name    : "";
     fCity.value    = spot ? spot.city    : "";
+    fSeason.value  = spot ? spot.season  : "";
     fCountry.value = spot ? spot.country : "";
     var r = form.querySelector('input[name=tier][value="' + (spot ? spot.tier : "top") + '"]');
     if(r) r.checked = true;
@@ -533,6 +552,7 @@
     var data = {
       name:    fName.value.trim(),
       city:    fCity.value.trim(),
+      season:  fSeason.value.trim(),
       country: fCountry.value.trim(),
       tier:    (form.querySelector("input[name=tier]:checked")||{}).value || "npc"
     };
