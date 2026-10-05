@@ -106,6 +106,24 @@
     padding:6px 5px;transition:background .12s;
   }
   .tile:hover{background:var(--tile-h)}
+  /* manipulation 而不是 none：手指按在方块上仍能滚页面，
+     真正进入拖拽后再由 JS 的 preventDefault 挡住滚动 */
+  .tile{touch-action:manipulation}
+  .tile.lifting{opacity:.22}
+
+  .drag-ghost{
+    position:fixed;z-index:60;pointer-events:none;margin:0;
+    transform:translate(-50%,-50%) scale(1.08) rotate(-3deg);
+    box-shadow:0 14px 32px rgba(0,0,0,.65);opacity:.96;
+  }
+  .lane.over{background:#232323}
+  .lane.over::after{
+    content:"";position:absolute;inset:3px;border-radius:3px;
+    border:2px dashed var(--c);opacity:.75;pointer-events:none;
+  }
+  .lane{position:relative}
+  body.dragging{user-select:none;-webkit-user-select:none;cursor:grabbing}
+  body.dragging .tile{cursor:grabbing}
   .tile .flag{width:26px;height:26px;border-radius:50%;flex:none;background:var(--tile-h)}
   .tile .nm{
     font-size:11px;line-height:1.25;color:var(--ink);text-align:center;font-weight:500;
@@ -121,7 +139,7 @@
 
   /* ---------- 页脚 ---------- */
   footer{margin-top:30px;display:flex;gap:9px;align-items:center;flex-wrap:wrap}
-  footer .hint{font-size:12px;color:var(--ink-3);margin-right:auto;max-width:46ch;line-height:1.55}
+  footer .hint{font-size:12px;color:var(--ink-3);margin-right:auto;max-width:52ch;line-height:1.55}
   .warn{font-size:12.5px;color:var(--t1);margin:14px 0 0}
 
   /* 本地改动没发布时的提示条。没有它，浏览器里的旧草稿会悄悄挡住线上清单。 */
@@ -197,7 +215,7 @@
   <main class="board" id="board"></main>
 
   <footer>
-    <p class="hint">记录存在这台设备的浏览器里，不上传。换设备或清缓存前记得导出。</p>
+    <p class="hint">方块可以直接拖到别的档位（手机上长按再拖）。记录存在这台设备的浏览器里，不上传；换设备或清缓存前记得导出。</p>
     <button class="btn ghost" id="out">导出</button>
     <button class="btn ghost" id="in">导入</button>
     <input type="file" id="file" accept="application/json,.json" hidden>
@@ -573,12 +591,169 @@
   });
   document.getElementById("add").addEventListener("click", function(){ open(null); });
 
+  var suppressClick = false;
   board.addEventListener("click", function(e){
+    if(suppressClick){ suppressClick = false; return; }   /* 刚拖过，别顺手开弹窗 */
     var tile = e.target.closest("[data-open]");
     if(!tile) return;
     var hit = spots.filter(function(s){ return s.id === tile.getAttribute("data-open"); })[0];
     if(hit) open(hit);
   });
+
+  /* ---------- 拖拽换档 ---------- */
+  var MOVE_SLOP = 6;        /* 超过这个位移才算拖，否则当点击 */
+  var HOLD_MS   = 280;      /* 触屏需要长按这么久才进入拖拽，之前仍可滚页面 */
+  var drag = null;
+
+  function stopScroll(e){ if(drag && drag.live) e.preventDefault(); }
+
+  board.addEventListener("pointerdown", function(e){
+    if(e.button) return;                                  /* 只认主键 */
+    var tile = e.target.closest("[data-open]");
+    if(!tile) return;
+    drag = {
+      id: tile.getAttribute("data-open"), tile: tile,
+      x0: e.clientX, y0: e.clientY, live: false,
+      touch: e.pointerType !== "mouse", timer: 0, lane: null
+    };
+    if(drag.touch){
+      drag.timer = setTimeout(function(){
+        if(drag && !drag.live) lift(drag.x0, drag.y0);
+      }, HOLD_MS);
+    }
+  });
+
+  function lift(x, y){
+    drag.live = true;
+    drag.x = x; drag.y = y; drag.dy = 0;
+    requestAnimationFrame(autoScroll);
+    var r = drag.tile.getBoundingClientRect();
+    var g = drag.tile.cloneNode(true);
+    g.className = "tile drag-ghost";
+    g.style.width = r.width + "px";
+    g.style.height = r.height + "px";
+    drag.ghost = g;
+    document.body.appendChild(g);
+    drag.tile.classList.add("lifting");
+    document.body.classList.add("dragging");
+    document.addEventListener("touchmove", stopScroll, { passive:false });
+    place(x, y);
+  }
+
+  /* 指针贴近视口上下边缘时自动滚动，否则够不着屏幕外的档位 */
+  function autoScroll(){
+    if(!drag || !drag.live) return;
+    if(drag.dy){
+      var before = window.scrollY;
+      window.scrollBy(0, drag.dy);
+      if(window.scrollY !== before) place(drag.x, drag.y);
+    }
+    requestAnimationFrame(autoScroll);
+  }
+
+  function edge(y){
+    var EDGE = 90, STEP = 16;
+    if(y < EDGE)                   return -STEP * (1 - y / EDGE);
+    if(y > innerHeight - EDGE)     return  STEP * (1 - (innerHeight - y) / EDGE);
+    return 0;
+  }
+
+  function place(x, y){
+    drag.x = x; drag.y = y; drag.dy = edge(y);
+    drag.ghost.style.left = x + "px";
+    drag.ghost.style.top  = y + "px";
+    drag.ghost.style.display = "none";
+    var el = document.elementFromPoint(x, y);
+    drag.ghost.style.display = "";
+    var lane = el && el.closest ? el.closest(".lane") : null;
+    if(lane !== drag.lane){
+      if(drag.lane) drag.lane.classList.remove("over");
+      if(lane) lane.classList.add("over");
+      drag.lane = lane;
+    }
+    drag.beforeId = lane ? anchorIn(lane, x, y) : null;
+  }
+
+  /* 指针已经越过这块方块了吗（按阅读顺序：先比行，再比左右） */
+  function past(r, x, y){
+    if(y > r.bottom) return true;
+    if(y < r.top)    return false;
+    return x > r.left + r.width / 2;
+  }
+
+  /* 应插到哪个方块之前；null = 放到该档末尾 */
+  function anchorIn(lane, x, y){
+    var tiles = lane.querySelectorAll(".tile");
+    for(var i=0;i<tiles.length;i++){
+      var id = tiles[i].getAttribute("data-open");
+      if(id === drag.id) continue;
+      if(!past(tiles[i].getBoundingClientRect(), x, y)) return id;
+    }
+    return null;
+  }
+
+  document.addEventListener("pointermove", function(e){
+    if(!drag) return;
+    if(drag.live){ place(e.clientX, e.clientY); return; }
+    var far = Math.abs(e.clientX - drag.x0) > MOVE_SLOP ||
+              Math.abs(e.clientY - drag.y0) > MOVE_SLOP;
+    if(!far) return;
+    if(drag.touch){ clearTimeout(drag.timer); drag = null; return; }  /* 触屏上这是滚动 */
+    lift(e.clientX, e.clientY);
+  });
+
+  function endDrag(commit){
+    if(!drag) return;
+    clearTimeout(drag.timer);
+    if(drag.live){
+      document.removeEventListener("touchmove", stopScroll, { passive:false });
+      if(drag.ghost && drag.ghost.parentNode) drag.ghost.parentNode.removeChild(drag.ghost);
+      drag.tile.classList.remove("lifting");
+      document.body.classList.remove("dragging");
+      if(drag.lane) drag.lane.classList.remove("over");
+      suppressClick = true;
+      var tierKey = commit && drag.lane ? laneTier(drag.lane) : null;
+      var d = drag; drag = null;
+      if(tierKey){
+        reseat(d.id, tierKey, d.beforeId);
+        save();
+        render();
+        return;
+      }
+    }
+    drag = null;
+  }
+
+  function laneTier(lane){
+    var tiers = [].slice.call(document.querySelectorAll(".tier"));
+    var i = tiers.indexOf(lane.closest(".tier"));
+    return i < 0 ? null : TIERS[i].key;
+  }
+
+  /* 把某条移到目标档，并插到 beforeId 之前；beforeId 为空则排在该档最后 */
+  function reseat(id, tierKey, beforeId){
+    var idx = -1, i;
+    for(i=0;i<spots.length;i++) if(spots[i].id === id){ idx = i; break; }
+    if(idx < 0) return;
+    var item = spots[idx];
+    spots.splice(idx, 1);
+    item.tier = tierKey;
+
+    var at = -1;
+    if(beforeId){
+      for(i=0;i<spots.length;i++) if(spots[i].id === beforeId){ at = i; break; }
+    }
+    if(at < 0){
+      var last = -1;
+      for(i=0;i<spots.length;i++) if(spots[i].tier === tierKey) last = i;
+      at = last < 0 ? spots.length : last + 1;
+    }
+    spots.splice(at, 0, item);
+  }
+
+  document.addEventListener("pointerup",     function(){ endDrag(true);  });
+  document.addEventListener("pointercancel", function(){ endDrag(false); });
+  window.addEventListener("blur",            function(){ endDrag(false); });
 
   wall.addEventListener("click", function(e){
     var p = e.target.closest("[data-country]");
