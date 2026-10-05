@@ -394,17 +394,29 @@
     return ISO[k] || ISO[k.replace(/[　\s]/g,"")] || "";
   }
 
-  /* 认得出国家就上圆形国旗，认不出就用首字占位圆，两者同尺寸同位置 */
+  /* 认得出国家就上圆形国旗，认不出就用首字占位圆，两者同尺寸同位置。
+     占位字放在 data-ph 里，由下面的 error 监听兜底——别写内联 onerror：
+     里面一旦出现双引号就会提前闭合属性，整个处理器报语法错误。 */
   function flagHtml(cn, cls, px){
     var code = iso(cn), label = cn || "未填";
     if(code){
       return '<img class="' + cls + '" src="' + FLAG_BASE + code + '.svg"' +
              ' alt="" width="' + px + '" height="' + px + '" loading="lazy" decoding="async"' +
-             ' onerror="this.replaceWith(Object.assign(document.createElement(\'span\'),' +
-             '{className:\'' + cls + ' ph\',textContent:' + JSON.stringify(label.slice(0,1)) + '}))">';
+             ' data-ph="' + esc(label.slice(0,1)) + '">';
     }
     return '<span class="' + cls + ' ph">' + esc(label.slice(0,1)) + '</span>';
   }
+
+  /* 国旗图拉不下来（CDN 挂了、断网）时换成首字占位圆。
+     error 事件不冒泡，所以得用捕获阶段监听。 */
+  document.addEventListener("error", function(e){
+    var img = e.target;
+    if(!img || img.tagName !== "IMG" || !img.classList.contains("flag")) return;
+    var span = document.createElement("span");
+    span.className = img.className + " ph";
+    span.textContent = img.getAttribute("data-ph") || "?";
+    if(img.parentNode) img.parentNode.replaceChild(span, img);
+  }, true);
 
   function countries(){
     var seen = {}, out = [];
