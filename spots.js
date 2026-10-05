@@ -12,7 +12,7 @@ window.SPOTS = [
   { "name": "金泽兼六园"                   , "city": "金泽"        , "season": ""        , "country": "日本"  , "tier": "npc" },
   { "name": "河口湖"                       , "city": "富士吉田"    , "season": ""        , "country": "日本"  , "tier": "npc" },
   { "name": "鹤见台"                       , "city": "钏路"        , "season": ""        , "country": "日本"  , "tier": "top" },
-  { "name": "阿寒湖"                       , "city": "钏路"        , "season": ""        , "country": "日本"  , "tier": "ren" },
+  { "name": "阿寒湖"                       , "city": "钏路"        , "season": ""        , "country": "日本"  , "tier": "top" },
   { "name": "Point Reyes National Seashore", "city": "Marin County", "season": ""        , "country": "美国"  , "tier": "top" },
   { "name": "Lake Wanaka"                  , "city": "Wanaka"      , "season": ""        , "country": "新西兰", "tier": "top" },
   { "name": "Lake Pukaki"                  , "city": "Twizel"      , "season": ""        , "country": "新西兰", "tier": "hang" },
@@ -38,5 +38,7 @@ window.SPOTS = [
   { "name": "Grand Teton National Park"    , "city": "Wyoming"     , "season": ""        , "country": "美国"  , "tier": "hang" },
   { "name": "Monument Valley"              , "city": "Arizona"     , "season": ""        , "country": "美国"  , "tier": "hang" },
   { "name": "Pinnacles National Park"      , "city": "California"  , "season": ""        , "country": "美国"  , "tier": "ren" },
-  { "name": "函馆山"                       , "city": "函馆"        , "season": ""        , "country": "日本"  , "tier": "top" }
+  { "name": "函馆山"                       , "city": "函馆"        , "season": ""        , "country": "日本"  , "tier": "top" },
+  { "name": "上海之鱼"                     , "city": "上海"        , "season": ""        , "country": "中国"  , "tier": "la" },
+  { "name": "瘦西湖"                       , "city": "扬州"        , "season": ""        , "country": "中国"  , "tier": "npc" }
 ];
