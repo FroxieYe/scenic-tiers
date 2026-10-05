@@ -24,5 +24,13 @@ window.SPOTS = [
   { "name": "洱海"                         , "city": "大理"        , "season": ""        , "country": "中国"  , "tier": "top" },
   { "name": "阿尔山国家公园"               , "city": "阿尔山"      , "season": "秋天"    , "country": "中国"  , "tier": "hang" },
   { "name": "莫尔道嘎公园"                 , "city": "额尔古纳"    , "season": ""        , "country": "中国"  , "tier": "top" },
-  { "name": "额尔古纳湿地"                 , "city": "额尔古纳"    , "season": "秋天"    , "country": "中国"  , "tier": "hang" }
+  { "name": "额尔古纳湿地"                 , "city": "额尔古纳"    , "season": "秋天"    , "country": "中国"  , "tier": "hang" },
+  { "name": "Yellowstone National Park"    , "city": "Wyoming"     , "season": ""        , "country": "美国"  , "tier": "shen" },
+  { "name": "Grand Canyon National Park"   , "city": "Arizona"     , "season": ""        , "country": "美国"  , "tier": "shen" },
+  { "name": "Yosemite National Park"       , "city": "California"  , "season": ""        , "country": "美国"  , "tier": "hang" },
+  { "name": "Death Valley National Park"   , "city": "California"  , "season": ""        , "country": "美国"  , "tier": "hang" },
+  { "name": "Kings Canyon National Park"   , "city": "California"  , "season": ""        , "country": "美国"  , "tier": "hang" },
+  { "name": "Arches National Park"         , "city": "Utah"        , "season": ""        , "country": "美国"  , "tier": "hang" },
+  { "name": "Niagara Falls"                , "city": "New York"    , "season": ""        , "country": "美国"  , "tier": "hang" },
+  { "name": "Sequoia National Park"        , "city": "California"  , "season": ""        , "country": "美国"  , "tier": "top" }
 ];
